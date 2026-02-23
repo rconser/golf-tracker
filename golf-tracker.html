@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Golf Tracker">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1f17">
+<title>Golf Shot Tracker</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f1f17'/><text y='72' x='50' text-anchor='middle' font-size='60'>⛳</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #1a3a2a; --green-mid: #2d5c3f; --green-light: #4a9060;
+    --fairway: #7ab648; --cream: #f5f0e8; --gold: #c8a84b;
+    --sand: #e8d5a3; --ink: #0f1f17; --flag-red: #c0392b;
+  }
+  html, body { height: 100%; font-family: 'DM Mono', monospace; background: var(--green); color: var(--cream); overflow: hidden; }
+  html { height: -webkit-fill-available; }
+  body { min-height: -webkit-fill-available; }
+  #app { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  header { background: var(--ink); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--gold); flex-shrink: 0; z-index: 10; }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold); letter-spacing: 0.02em; }
+  header .subtitle { font-size: 0.6rem; color: var(--green-light); letter-spacing: 0.15em; text-transform: uppercase; }
+  .mode-bar { display: flex; gap: 6px; background: var(--ink); padding: 8px 12px; border-bottom: 1px solid var(--green-mid); flex-shrink: 0; }
+  .mode-btn { flex: 1; padding: 11px 4px; border: 1px solid var(--green-mid); background: var(--green); color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: all 0.15s; }
+  .mode-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 500; }
+  #map { flex: 1; position: relative; }
+  #api-overlay { position: absolute; inset: 0; background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 12px; padding: 24px; }
+  #api-overlay h2 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.4rem; }
+  #api-overlay p { font-size: 0.72rem; color: var(--sand); text-align: center; line-height: 1.6; max-width: 340px; }
+  #api-key-input { width: 100%; max-width: 380px; padding: 10px 14px; background: var(--green); border: 1px solid var(--gold); color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.78rem; border-radius: 3px; outline: none; }
+  #load-map-btn { padding: 10px 28px; background: var(--gold); color: var(--ink); border: none; font-family: 'DM Mono', monospace; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-radius: 3px; }
+  #info-panel { background: var(--ink); border-top: 2px solid var(--green-mid); padding: 10px 12px; flex-shrink: 0; max-height: 220px; overflow-y: auto; }
+  .panel-title { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green-light); margin-bottom: 8px; }
+  .stats-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-box { flex: 1; background: var(--green); border: 1px solid var(--green-mid); border-radius: 4px; padding: 8px 10px; text-align: center; }
+  .stat-label { font-size: 0.55rem; color: var(--green-light); letter-spacing: 0.1em; text-transform: uppercase; }
+  .stat-value { font-size: 1.05rem; color: var(--gold); font-weight: 500; margin-top: 2px; }
+  .stat-unit { font-size: 0.55rem; color: var(--sand); }
+  .shot-list { display: flex; flex-direction: column; gap: 5px; }
+  .shot-item { display: flex; align-items: center; gap: 8px; background: var(--green); border: 1px solid var(--green-mid); border-radius: 3px; padding: 6px 10px; font-size: 0.65rem; }
+  .shot-num { width: 20px; height: 20px; background: var(--gold); color: var(--ink); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 500; flex-shrink: 0; }
+  .shot-info { flex: 1; }
+  .shot-distances { display: flex; gap: 12px; margin-top: 2px; }
+  .shot-dist-item { color: var(--sand); }
+  .shot-dist-item span { color: var(--cream); }
+  .shot-delete { background: none; border: none; color: var(--green-light); cursor: pointer; font-size: 0.8rem; padding: 2px 4px; }
+  .action-row { display: flex; gap: 8px; margin-top: 10px; }
+  .action-btn { flex: 1; padding: 12px; border: 1px solid var(--green-mid); background: var(--green); color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 3px; }
+  .hint { font-size: 0.6rem; color: var(--green-light); text-align: center; padding: 6px; letter-spacing: 0.05em; }
+  #map-type-btn { position: absolute; top: 10px; right: 10px; z-index: 5; background: var(--ink); color: var(--gold); border: 1px solid var(--gold); font-family: 'DM Mono', monospace; font-size: 0.62rem; padding: 6px 10px; border-radius: 3px; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; }
+  #info-panel::-webkit-scrollbar { width: 4px; }
+  #info-panel::-webkit-scrollbar-track { background: var(--green); }
+  #info-panel::-webkit-scrollbar-thumb { background: var(--green-mid); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>⛳ Shot Tracker</h1>
+      <div class="subtitle">Golf Distance Measurement</div>
+    </div>
+  </header>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-tee" onclick="setMode('tee')">📍 Set Tee</button>
+    <button class="mode-btn" id="btn-target" onclick="setMode('target')">🚩 Set Target</button>
+    <button class="mode-btn" id="btn-shot" onclick="setMode('shot')">🏌️ Mark Shot</button>
+  </div>
+  <div id="map">
+    <div id="api-overlay">
+      <h2>⛳ Golf Shot Tracker</h2>
+      <p>Enter your Google Maps API key to get started.</p>
+      <input id="api-key-input" type="text" placeholder="AIza..." autocomplete="off" />
+      <button id="load-map-btn" onclick="loadMap()">Load Map</button>
+      <p id="api-status" style="font-size:0.7rem;min-height:1.4em;text-align:center;max-width:380px;line-height:1.6;"></p>
+      <div style="font-size:0.6rem;color:#666;max-width:380px;line-height:1.7;text-align:left;border-top:1px solid #333;padding-top:10px;">
+        <b style="color:#999">If nothing happens, check:</b><br>
+        1. Enable <b style="color:#c8a84b">Maps JavaScript API</b> in Google Cloud<br>
+        2. Billing must be enabled on your project<br>
+        3. Key restrictions must allow this domain
+      </div>
+    </div>
+    <button id="map-type-btn" style="display:none" onclick="toggleMapType()">🛰 Satellite</button>
+  </div>
+  <div id="info-panel">
+    <div class="hint">Set your tee position, then the target, then mark shots.</div>
+  </div>
+</div>
+<script>
+let map, teeMarker, targetMarker, teePos, targetPos;
+let shots = [], mode = 'tee', mapType = 'hybrid';
+let shotLines = [], distanceLine = null;
+
+function loadHistory() { try { const s = localStorage.getItem('golf_shots'); if (s) shots = JSON.parse(s); } catch(e) {} }
+function saveHistory() { localStorage.setItem('golf_shots', JSON.stringify(shots)); }
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + m).classList.add('active');
+}
+
+function loadMap() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { alert('Please enter your API key'); return; }
+  localStorage.setItem('gmaps_key', key);
+  const btn = document.getElementById('load-map-btn');
+  btn.textContent = 'Loading...'; btn.disabled = true;
+  document.getElementById('api-status').textContent = '⏳ Contacting Google Maps...';
+  document.getElementById('api-status').style.color = '#c8a84b';
+  document.querySelectorAll('script[src*="maps.googleapis"]').forEach(s => s.remove());
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap&v=weekly`;
+  script.async = true; script.defer = true;
+  script.onerror = () => {
+    btn.textContent = 'Load Map'; btn.disabled = false;
+    document.getElementById('api-status').textContent = '❌ Failed. Check key and connection.';
+    document.getElementById('api-status').style.color = '#e74c3c';
+  };
+  document.head.appendChild(script);
+  setTimeout(() => {
+    if (document.getElementById('api-overlay').style.display !== 'none') {
+      btn.textContent = 'Load Map'; btn.disabled = false;
+      document.getElementById('api-status').textContent = '⏱ Timed out — check API key, billing, and domain restrictions.';
+      document.getElementById('api-status').style.color = '#e67e22';
+    }
+  }, 8000);
+}
+
+window.initMap = function() {
+  document.getElementById('api-overlay').style.display = 'none';
+  document.getElementById('map-type-btn').style.display = 'block';
+  document.getElementById('info-panel').innerHTML = '<div class="hint">📍 Finding your location...</div>';
+
+  let blueDot = null, blueDotAccuracy = null;
+
+  const initMapAtLocation = (center) => {
+    map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 18, center, mapTypeId: 'hybrid', tilt: 0,
+      disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy',
+    });
+    map.addListener('click', handleMapClick);
+    loadHistory(); renderAll(); renderPanel();
+  };
+
+  const updateBlueDot = (pos) => {
+    if (!map) return;
+    const latlng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+    const accuracy = pos.coords.accuracy;
+    if (blueDotAccuracy) { blueDotAccuracy.setCenter(latlng); blueDotAccuracy.setRadius(accuracy); }
+    else { blueDotAccuracy = new google.maps.Circle({ map, center: latlng, radius: accuracy, fillColor: '#4285F4', fillOpacity: 0.15, strokeColor: '#4285F4', strokeOpacity: 0.4, strokeWeight: 1, clickable: false, zIndex: 1 }); }
+    if (blueDot) { blueDot.setPosition(latlng); }
+    else { blueDot = new google.maps.Marker({ position: latlng, map, title: 'Your location', icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#4285F4', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }, zIndex: 20, clickable: false }); }
+  };
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        initMapAtLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        updateBlueDot(pos);
+        navigator.geolocation.watchPosition(updateBlueDot, (e) => console.warn(e), { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+      },
+      (err) => {
+        console.warn('Geolocation:', err.message);
+        initMapAtLocation({ lat: 37.5, lng: -122.0 });
+        document.getElementById('info-panel').innerHTML = '<div class="hint">⚠️ Location denied. Pan map manually then set tee.</div>';
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  } else { initMapAtLocation({ lat: 37.5, lng: -122.0 }); }
+};
+
+function handleMapClick(e) {
+  const lat = e.latLng.lat(), lng = e.latLng.lng();
+  if (mode === 'tee') { teePos = {lat,lng}; placeTeeMarker(); setMode('target'); }
+  else if (mode === 'target') { targetPos = {lat,lng}; placeTargetMarker(); setMode('shot'); }
+  else if (mode === 'shot') {
+    if (!teePos || !targetPos) { alert('Set tee and target first.'); return; }
+    const shot = { id: Date.now(), lat, lng, distFromTee: haversine(teePos,{lat,lng}), distFromTarget: haversine(targetPos,{lat,lng}), num: shots.length+1 };
+    shots.push(shot); saveHistory(); drawShotMarker(shot); drawLines(); renderPanel();
+  }
+}
+
+function placeTeeMarker() {
+  if (teeMarker) teeMarker.setMap(null);
+  teeMarker = new google.maps.Marker({ position: teePos, map, title: 'Tee', icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#c8a84b', fillOpacity: 1, strokeColor: '#0f1f17', strokeWeight: 2 }, label: { text: 'T', color: '#0f1f17', fontWeight: 'bold', fontSize: '11px' }, zIndex: 10 });
+}
+
+function placeTargetMarker() {
+  if (targetMarker) targetMarker.setMap(null);
+  targetMarker = new google.maps.Marker({ position: targetPos, map, title: 'Target', icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#c0392b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, label: { text: '⚑', color: '#fff', fontSize: '12px' }, zIndex: 10 });
+}
+
+function drawShotMarker(shot) {
+  const marker = new google.maps.Marker({ position: {lat:shot.lat,lng:shot.lng}, map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#4a9060', fillOpacity: 0.9, strokeColor: '#f5f0e8', strokeWeight: 1.5 }, label: { text: String(shot.num), color: '#f5f0e8', fontSize: '10px', fontWeight: '500' }, zIndex: 5 });
+  shot._marker = marker;
+  const iw = new google.maps.InfoWindow({ content: `<div style="font-family:monospace;font-size:12px"><b>Shot ${shot.num}</b><br>From tee: <b>${yds(shot.distFromTee)} yds</b><br>From target: <b>${yds(shot.distFromTarget)} yds</b></div>` });
+  marker.addListener('click', () => iw.open(map, marker));
+}
+
+function drawLines() {
+  shotLines.forEach(l => l.setMap(null)); shotLines = [];
+  if (distanceLine) { distanceLine.setMap(null); distanceLine = null; }
+  if (!teePos || !targetPos) return;
+  distanceLine = new google.maps.Polyline({ path: [teePos, targetPos], geodesic: true, strokeColor: '#c8a84b', strokeOpacity: 0.5, strokeWeight: 1.5, map });
+  shots.forEach(shot => {
+    const line = new google.maps.Polyline({ path: [{lat:shot.lat,lng:shot.lng}, targetPos], geodesic: true, strokeColor: '#4a9060', strokeOpacity: 0.6, strokeWeight: 1, map });
+    shotLines.push(line);
+  });
+}
+
+function renderAll() { shots.forEach(s => drawShotMarker(s)); drawLines(); }
+
+function renderPanel() {
+  const panel = document.getElementById('info-panel');
+  if (!teePos) { panel.innerHTML = `<div class="hint">Tap the map to set your <b style="color:var(--gold)">tee</b> position.</div>`; return; }
+  if (!targetPos) { panel.innerHTML = `<div class="hint">Now tap to place the <b style="color:var(--flag-red)">target / pin</b>.</div>`; return; }
+  const teeToTarget = haversine(teePos, targetPos);
+  let html = `<div class="panel-title">Hole Info</div><div class="stats-row"><div class="stat-box"><div class="stat-label">Tee → Target</div><div class="stat-value">${yds(teeToTarget)}</div><div class="stat-unit">yards</div></div><div class="stat-box"><div class="stat-label">Shots Logged</div><div class="stat-value">${shots.length}</div><div class="stat-unit">this hole</div></div></div>`;
+  if (shots.length > 0) {
+    html += `<div class="panel-title">Shot History</div><div class="shot-list">`;
+    shots.forEach(s => { html += `<div class="shot-item"><div class="shot-num">${s.num}</div><div class="shot-info"><div class="shot-distances"><div class="shot-dist-item">📏 Tee: <span>${yds(s.distFromTee)} yds</span></div><div class="shot-dist-item">🚩 Target: <span>${yds(s.distFromTarget)} yds</span></div></div></div><button class="shot-delete" onclick="deleteShot(${s.id})">✕</button></div>`; });
+    html += `</div>`;
+  }
+  html += `<div class="action-row"><button class="action-btn" onclick="newHole()">New Hole</button><button class="action-btn" onclick="clearAll()">Clear All</button></div>`;
+  panel.innerHTML = html;
+}
+
+function deleteShot(id) {
+  const shot = shots.find(s => s.id === id);
+  if (shot?._marker) shot._marker.setMap(null);
+  shots = shots.filter(s => s.id !== id);
+  shots.forEach((s,i) => { s.num = i+1; if(s._marker) s._marker.setLabel({text:String(s.num),color:'#f5f0e8',fontSize:'10px',fontWeight:'500'}); });
+  saveHistory(); drawLines(); renderPanel();
+}
+
+function newHole() {
+  shots.forEach(s => { if(s._marker) s._marker.setMap(null); }); shots = [];
+  if (teeMarker) { teeMarker.setMap(null); teeMarker = null; }
+  if (targetMarker) { targetMarker.setMap(null); targetMarker = null; }
+  teePos = null; targetPos = null;
+  shotLines.forEach(l => l.setMap(null)); shotLines = [];
+  if (distanceLine) { distanceLine.setMap(null); distanceLine = null; }
+  saveHistory(); setMode('tee'); renderPanel();
+}
+
+function clearAll() { if (!confirm('Clear everything?')) return; newHole(); localStorage.removeItem('golf_shots'); }
+
+function toggleMapType() {
+  const btn = document.getElementById('map-type-btn');
+  if (mapType === 'hybrid') { mapType = 'roadmap'; map.setMapTypeId('roadmap'); btn.textContent = '🛰 Satellite'; }
+  else { mapType = 'hybrid'; map.setMapTypeId('hybrid'); btn.textContent = '🗺 Map'; }
+}
+
+function haversine(a, b) {
+  const R = 6371000, φ1 = a.lat*Math.PI/180, φ2 = b.lat*Math.PI/180;
+  const Δφ = (b.lat-a.lat)*Math.PI/180, Δλ = (b.lng-a.lng)*Math.PI/180;
+  const x = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+function yds(m) { return Math.round(m * 1.09361); }
+
+window.addEventListener('load', () => {
+  const k = localStorage.getItem('gmaps_key');
+  if (k) document.getElementById('api-key-input').value = k;
+});
+</script>
+</body>
+</html>
