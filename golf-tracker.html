@@ -12,79 +12,39 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f1f17'/><text y='72' x='50' text-anchor='middle' font-size='60'>⛳</text></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --green: #1a3a2a;
-    --green-mid: #2d5c3f;
-    --green-light: #4a9060;
-    --fairway: #7ab648;
-    --cream: #f5f0e8;
-    --gold: #c8a84b;
-    --sand: #e8d5a3;
-    --ink: #0f1f17;
-    --flag-red: #c0392b;
+    --green: #1a3a2a; --green-mid: #2d5c3f; --green-light: #4a9060;
+    --cream: #f5f0e8; --gold: #c8a84b; --sand: #e8d5a3;
+    --ink: #0f1f17; --flag-red: #c0392b;
   }
-
-  html, body { height: 100%; font-family: 'DM Mono', monospace; background: var(--green); color: var(--cream); overflow: hidden; }
-  html { height: -webkit-fill-available; }
-  body { min-height: -webkit-fill-available; }
-
-  #app { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available;
+  html { height: 100%; height: -webkit-fill-available; }
+  body { height: 100%; min-height: -webkit-fill-available; font-family: 'DM Mono', monospace; background: var(--green); color: var(--cream); overflow: hidden; }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100vh; height: -webkit-fill-available;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
-
-  /* Header */
   header {
-    background: var(--ink);
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 2px solid var(--gold);
-    flex-shrink: 0;
-    z-index: 10;
+    background: var(--ink); padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid var(--gold); flex-shrink: 0; z-index: 10;
   }
-  header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
-    color: var(--gold);
-    letter-spacing: 0.02em;
-  }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold); }
   header .subtitle { font-size: 0.6rem; color: var(--green-light); letter-spacing: 0.15em; text-transform: uppercase; }
-
-  /* Mode buttons */
   .mode-bar {
-    display: flex;
-    gap: 6px;
-    background: var(--ink);
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--green-mid);
-    flex-shrink: 0;
+    display: flex; gap: 6px; background: var(--ink);
+    padding: 8px 12px; border-bottom: 1px solid var(--green-mid); flex-shrink: 0;
   }
   .mode-btn {
-    flex: 1;
-    padding: 11px 4px;
-    border: 1px solid var(--green-mid);
-    background: var(--green);
-    color: var(--cream);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.15s;
+    flex: 1; padding: 11px 4px; border: 1px solid var(--green-mid);
+    background: var(--green); color: var(--cream); font-family: 'DM Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; border-radius: 3px; transition: all 0.15s;
   }
   .mode-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 500; }
-  .mode-btn:hover:not(.active) { border-color: var(--gold); color: var(--gold); }
-
-  /* Map */
   #map { flex: 1; position: relative; }
-
-  /* API Key overlay */
   #api-overlay {
     position: absolute; inset: 0; background: var(--ink);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -104,81 +64,36 @@
     font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
     cursor: pointer; border-radius: 3px;
   }
-
-  /* Info panel */
-  #info-panel {
-    background: var(--ink);
-    border-top: 2px solid var(--green-mid);
-    padding: 10px 12px;
-    flex-shrink: 0;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-  .panel-title {
-    font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--green-light); margin-bottom: 8px;
-  }
-
-  /* Stats row */
-  .stats-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat-box {
-    flex: 1; background: var(--green); border: 1px solid var(--green-mid);
-    border-radius: 4px; padding: 8px 10px; text-align: center;
-  }
-  .stat-label { font-size: 0.55rem; color: var(--green-light); letter-spacing: 0.1em; text-transform: uppercase; }
-  .stat-value { font-size: 1.05rem; color: var(--gold); font-weight: 500; margin-top: 2px; }
-  .stat-unit { font-size: 0.55rem; color: var(--sand); }
-
-  /* Shot history */
-  .shot-list { display: flex; flex-direction: column; gap: 5px; }
-  .shot-item {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--green); border: 1px solid var(--green-mid);
-    border-radius: 3px; padding: 6px 10px; font-size: 0.65rem;
-  }
-  .shot-num {
-    width: 20px; height: 20px; background: var(--gold); color: var(--ink);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.6rem; font-weight: 500; flex-shrink: 0;
-  }
-  .shot-info { flex: 1; }
-  .shot-distances { display: flex; gap: 12px; margin-top: 2px; }
-  .shot-dist-item { color: var(--sand); }
-  .shot-dist-item span { color: var(--cream); }
-  .shot-delete {
-    background: none; border: none; color: var(--green-light);
-    cursor: pointer; font-size: 0.8rem; padding: 2px 4px;
-    transition: color 0.15s;
-  }
-  .shot-delete:hover { color: var(--flag-red); }
-
-  /* Action buttons */
-  .action-row { display: flex; gap: 8px; margin-top: 10px; }
-  .action-btn {
-    flex: 1; padding: 12px; border: 1px solid var(--green-mid);
-    background: var(--green); color: var(--cream);
-    font-family: 'DM Mono', monospace; font-size: 0.62rem;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    cursor: pointer; border-radius: 3px; transition: all 0.15s;
-  }
-  .action-btn:hover { border-color: var(--gold); color: var(--gold); }
-  .action-btn.danger:hover { border-color: var(--flag-red); color: var(--flag-red); }
-
-  .hint {
-    font-size: 0.6rem; color: var(--green-light); text-align: center;
-    padding: 6px; letter-spacing: 0.05em;
-  }
-
-  /* Map type toggle */
-  #map-type-btn {
-    position: absolute; top: 10px; right: 10px; z-index: 5;
+  .map-btn {
+    position: absolute; right: 10px; z-index: 5; display: none;
     background: var(--ink); color: var(--gold); border: 1px solid var(--gold);
     font-family: 'DM Mono', monospace; font-size: 0.62rem;
     padding: 6px 10px; border-radius: 3px; cursor: pointer;
     letter-spacing: 0.08em; text-transform: uppercase;
   }
-
-  /* Scrollbar */
+  #map-type-btn { top: 10px; }
+  #reset-north-btn { top: 48px; }
+  #info-panel {
+    background: var(--ink); border-top: 2px solid var(--green-mid);
+    padding: 10px 12px; flex-shrink: 0; max-height: 220px; overflow-y: auto;
+  }
+  .panel-title { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green-light); margin-bottom: 8px; }
+  .stats-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-box { flex: 1; background: var(--green); border: 1px solid var(--green-mid); border-radius: 4px; padding: 8px 10px; text-align: center; }
+  .stat-label { font-size: 0.55rem; color: var(--green-light); letter-spacing: 0.1em; text-transform: uppercase; }
+  .stat-value { font-size: 1.05rem; color: var(--gold); font-weight: 500; margin-top: 2px; }
+  .stat-unit { font-size: 0.55rem; color: var(--sand); }
+  .shot-list { display: flex; flex-direction: column; gap: 5px; }
+  .shot-item { display: flex; align-items: center; gap: 8px; background: var(--green); border: 1px solid var(--green-mid); border-radius: 3px; padding: 6px 10px; font-size: 0.65rem; }
+  .shot-num { width: 20px; height: 20px; background: var(--gold); color: var(--ink); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 500; flex-shrink: 0; }
+  .shot-info { flex: 1; }
+  .shot-distances { display: flex; gap: 12px; margin-top: 2px; }
+  .shot-dist-item { color: var(--sand); }
+  .shot-dist-item span { color: var(--cream); }
+  .shot-delete { background: none; border: none; color: var(--green-light); cursor: pointer; font-size: 0.8rem; padding: 2px 6px; }
+  .action-row { display: flex; gap: 8px; margin-top: 10px; }
+  .action-btn { flex: 1; padding: 12px; border: 1px solid var(--green-mid); background: var(--green); color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 3px; }
+  .hint { font-size: 0.6rem; color: var(--green-light); text-align: center; padding: 6px; letter-spacing: 0.05em; }
   #info-panel::-webkit-scrollbar { width: 4px; }
   #info-panel::-webkit-scrollbar-track { background: var(--green); }
   #info-panel::-webkit-scrollbar-thumb { background: var(--green-mid); border-radius: 2px; }
@@ -189,232 +104,193 @@
   <header>
     <div>
       <h1>⛳ Shot Tracker</h1>
-      <div class="subtitle">Golf Distance Measurement</div>
+      <div class="subtitle">Rock Creek CC</div>
     </div>
   </header>
-
   <div class="mode-bar">
     <button class="mode-btn active" id="btn-tee" onclick="setMode('tee')">📍 Set Tee</button>
     <button class="mode-btn" id="btn-target" onclick="setMode('target')">🚩 Set Target</button>
     <button class="mode-btn" id="btn-shot" onclick="setMode('shot')">🏌️ Mark Shot</button>
   </div>
-
   <div id="map">
     <div id="api-overlay">
       <h2>⛳ Golf Shot Tracker</h2>
-      <p>Enter your Google Maps API key to get started. Make sure it has Maps JavaScript API enabled.</p>
+      <p>Enter your Google Maps API key to get started.</p>
       <input id="api-key-input" type="text" placeholder="AIza..." autocomplete="off" />
       <button id="load-map-btn" onclick="loadMap()">Load Map</button>
-      <p id="api-status" style="font-size:0.7rem; min-height:1.4em; text-align:center; max-width:380px; line-height:1.6;"></p>
-      <div style="font-size:0.6rem; color:#666; max-width:380px; line-height:1.7; text-align:left; border-top:1px solid #333; padding-top:10px;">
+      <p id="api-status" style="font-size:0.7rem;min-height:1.4em;text-align:center;max-width:380px;line-height:1.6;"></p>
+      <div style="font-size:0.6rem;color:#666;max-width:380px;line-height:1.7;text-align:left;border-top:1px solid #333;padding-top:10px;">
         <b style="color:#999">If nothing happens, check:</b><br>
-        1. Google Cloud Console → APIs &amp; Services → Enable <b style="color:#c8a84b">Maps JavaScript API</b><br>
-        2. Your project must have <b style="color:#c8a84b">billing enabled</b><br>
-        3. API key must not be restricted to a domain that blocks localhost/file://
+        1. Enable <b style="color:#c8a84b">Maps JavaScript API</b> in Google Cloud<br>
+        2. Billing must be enabled on your project<br>
+        3. Key restrictions must allow this domain
       </div>
     </div>
-    <button id="map-type-btn" style="display:none" onclick="toggleMapType()">🛰 Satellite</button>
-    <button id="reset-north-btn" style="display:none;position:absolute;top:48px;right:10px;z-index:5;background:var(--ink);color:var(--gold);border:1px solid var(--gold);font-family:'DM Mono',monospace;font-size:0.62rem;padding:6px 10px;border-radius:3px;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;" onclick="resetNorth()">⬆ North</button>
+    <button id="map-type-btn" class="map-btn" onclick="toggleMapType()">🛰 Satellite</button>
+    <button id="reset-north-btn" class="map-btn" onclick="resetNorth()">⬆ North</button>
   </div>
-
   <div id="info-panel">
-    <div class="hint">Set your tee position, then the target, then mark shots.</div>
+    <div class="hint">Enter your API key above to get started.</div>
   </div>
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let map, teeMarker, targetMarker, teePos, targetPos;
-let shots = [];
-let mode = 'tee';
-let mapType = 'hybrid';
-let shotLines = [];
-let distanceLine = null;
+// Rock Creek CC Hole 1 tee: 45deg33'21.17"N  122deg52'51.58"W
+var ROCK_CREEK_TEE = { lat: 45.555881, lng: -122.880994 };
 
-// Load from localStorage
+var map, teeMarker, targetMarker, teePos, targetPos;
+var shots = [], mode = 'tee', mapType = 'hybrid';
+var shotLines = [], distanceLine = null;
+var blueDot = null, blueDotAccuracy = null;
+
 function loadHistory() {
   try {
-    const saved = localStorage.getItem('golf_shots');
-    if (saved) shots = JSON.parse(saved);
+    var s = localStorage.getItem('golf_shots');
+    if (s) shots = JSON.parse(s);
   } catch(e) {}
 }
+
 function saveHistory() {
-  localStorage.setItem('golf_shots', JSON.stringify(shots));
+  try {
+    localStorage.setItem('golf_shots', JSON.stringify(
+      shots.map(function(s) {
+        return { id:s.id, lat:s.lat, lng:s.lng, distFromTee:s.distFromTee, distFromTarget:s.distFromTarget, num:s.num };
+      })
+    ));
+  } catch(e) {}
 }
 
-// ─── Mode ─────────────────────────────────────────────────────────────────────
 function setMode(m) {
   mode = m;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('btn-' + m).classList.add('active');
-  if (map) {
-    map.setOptions({ draggableCursor: m === 'tee' ? 'crosshair' : m === 'target' ? 'crosshair' : 'crosshair' });
-  }
 }
 
-// ─── Load Google Maps ─────────────────────────────────────────────────────────
 function loadMap() {
-  const key = document.getElementById('api-key-input').value.trim();
+  var key = document.getElementById('api-key-input').value.trim();
   if (!key) { alert('Please enter your API key'); return; }
   localStorage.setItem('gmaps_key', key);
-
-  const btn = document.getElementById('load-map-btn');
+  var btn = document.getElementById('load-map-btn');
+  var status = document.getElementById('api-status');
   btn.textContent = 'Loading...';
   btn.disabled = true;
-  document.getElementById('api-status').textContent = '⏳ Contacting Google Maps...';
-  document.getElementById('api-status').style.color = '#c8a84b';
-
-  // Remove any existing Google Maps scripts
-  document.querySelectorAll('script[src*="maps.googleapis"]').forEach(s => s.remove());
-
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap&v=weekly`;
+  status.textContent = '⏳ Contacting Google Maps...';
+  status.style.color = '#c8a84b';
+  document.querySelectorAll('script[src*="maps.googleapis"]').forEach(function(s) { s.remove(); });
+  var script = document.createElement('script');
+  script.src = 'https://maps.googleapis.com/maps/api/js?key=' + key + '&callback=initMap&v=weekly';
   script.async = true;
   script.defer = true;
-  script.onerror = (e) => {
+  script.onerror = function() {
     btn.textContent = 'Load Map';
     btn.disabled = false;
-    document.getElementById('api-status').textContent = '❌ Script failed to load. Check your API key and internet connection.';
-    document.getElementById('api-status').style.color = '#e74c3c';
-    console.error('Maps script error:', e);
+    status.textContent = '❌ Failed. Check key and internet connection.';
+    status.style.color = '#e74c3c';
   };
   document.head.appendChild(script);
-
-  // Timeout fallback
-  setTimeout(() => {
+  setTimeout(function() {
     if (document.getElementById('api-overlay').style.display !== 'none') {
       btn.textContent = 'Load Map';
       btn.disabled = false;
-      document.getElementById('api-status').textContent = '⏱ Timed out. Possible causes: invalid key, Maps JavaScript API not enabled, or billing not set up in Google Cloud.';
-      document.getElementById('api-status').style.color = '#e67e22';
+      status.textContent = '⏱ Timed out — check key, billing, and domain restrictions.';
+      status.style.color = '#e67e22';
     }
   }, 8000);
 }
 
 window.initMap = function() {
-  console.log('initMap called — Google Maps loaded successfully');
   document.getElementById('api-overlay').style.display = 'none';
   document.getElementById('map-type-btn').style.display = 'block';
   document.getElementById('reset-north-btn').style.display = 'block';
+  document.getElementById('info-panel').innerHTML = '<div class="hint">📍 Starting at Rock Creek CC Hole 1...</div>';
 
-  // Show locating message
-  document.getElementById('info-panel').innerHTML = '<div class="hint">📍 Finding your location...</div>';
+  map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 18,
+    center: ROCK_CREEK_TEE,
+    mapTypeId: 'hybrid',
+    disableDefaultUI: true,
+    zoomControl: true,
+    rotateControl: false,
+    gestureHandling: 'greedy'
+  });
 
-  const initMapAtLocation = (center) => {
-    map = new google.maps.Map(document.getElementById('map'), {
-      zoom: 18,
-      center,
-      mapTypeId: 'hybrid',
-      disableDefaultUI: true,
-      zoomControl: true,
-      rotateControl: false,
-      gestureHandling: 'greedy',
-    });
-    map.addListener('click', handleMapClick);
-    loadHistory();
-    // Auto-set tee to Rock Creek CC Hole 1 tee box if no history loaded
-    if (!teePos) {
-      teePos = { lat: 45.555881, lng: -122.880994 };
-      placeTeeMarker();
-      setMode('target');
-    }
-    renderAll();
-    renderPanel();
-  };
+  map.addListener('click', handleMapClick);
+  loadHistory();
 
-  let blueDot = null;
-  let blueDotAccuracy = null;
+  // Auto-place tee at Rock Creek Hole 1 if starting fresh
+  if (shots.length === 0 && !teePos) {
+    teePos = { lat: ROCK_CREEK_TEE.lat, lng: ROCK_CREEK_TEE.lng };
+    placeTeeMarker();
+    setMode('target');
+  }
 
-  const updateBlueDot = (pos) => {
-    const latlng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-    const accuracy = pos.coords.accuracy; // metres
+  renderAll();
+  renderPanel();
 
-    // Accuracy circle
-    if (blueDotAccuracy) {
-      blueDotAccuracy.setCenter(latlng);
-      blueDotAccuracy.setRadius(accuracy);
-    } else {
-      blueDotAccuracy = new google.maps.Circle({
-        map,
-        center: latlng,
-        radius: accuracy,
-        fillColor: '#4285F4',
-        fillOpacity: 0.15,
-        strokeColor: '#4285F4',
-        strokeOpacity: 0.4,
-        strokeWeight: 1,
-        clickable: false,
-        zIndex: 1,
-      });
-    }
-
-    // Blue dot marker
-    if (blueDot) {
-      blueDot.setPosition(latlng);
-    } else {
-      blueDot = new google.maps.Marker({
-        position: latlng,
-        map,
-        title: 'Your location',
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: '#4285F4',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-        },
-        zIndex: 20,
-        clickable: false,
-      });
-    }
-  };
-
+  // GPS blue dot
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        initMapAtLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      function(pos) {
         updateBlueDot(pos);
-        // Keep tracking with high accuracy
         navigator.geolocation.watchPosition(
           updateBlueDot,
-          (err) => console.warn('Watch position error:', err.message),
+          function(e) { console.warn('GPS watch error:', e.message); },
           { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
       },
-      (err) => {
-        console.warn('Geolocation failed:', err.message);
-        initMapAtLocation({ lat: 45.555881, lng: -122.880994 });
-        document.getElementById('info-panel').innerHTML = '<div class="hint">⚠️ Location denied. Pan to your course.</div>';
-      },
+      function(e) { console.warn('GPS error:', e.message); },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  } else {
-    initMapAtLocation({ lat: 45.555881, lng: -122.880994 });
   }
 };
 
-// ─── Map Click ────────────────────────────────────────────────────────────────
-function handleMapClick(e) {
-  const lat = e.latLng.lat();
-  const lng = e.latLng.lng();
+function updateBlueDot(pos) {
+  if (!map) return;
+  var latlng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+  var accuracy = pos.coords.accuracy;
+  if (blueDotAccuracy) {
+    blueDotAccuracy.setCenter(latlng);
+    blueDotAccuracy.setRadius(accuracy);
+  } else {
+    blueDotAccuracy = new google.maps.Circle({
+      map: map, center: latlng, radius: accuracy,
+      fillColor: '#4285F4', fillOpacity: 0.15,
+      strokeColor: '#4285F4', strokeOpacity: 0.4, strokeWeight: 1,
+      clickable: false, zIndex: 1
+    });
+  }
+  if (blueDot) {
+    blueDot.setPosition(latlng);
+  } else {
+    blueDot = new google.maps.Marker({
+      position: latlng, map: map, title: 'You',
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8, fillColor: '#4285F4', fillOpacity: 1,
+        strokeColor: '#ffffff', strokeWeight: 2
+      },
+      zIndex: 20, clickable: false
+    });
+  }
+}
 
+function handleMapClick(e) {
+  var lat = e.latLng.lat(), lng = e.latLng.lng();
   if (mode === 'tee') {
-    teePos = { lat, lng };
+    teePos = { lat: lat, lng: lng };
     placeTeeMarker();
     setMode('target');
   } else if (mode === 'target') {
-    targetPos = { lat, lng };
+    targetPos = { lat: lat, lng: lng };
     placeTargetMarker();
     setMode('shot');
   } else if (mode === 'shot') {
-    if (!teePos || !targetPos) {
-      alert('Please set tee and target first.');
-      return;
-    }
-    const distFromTee = haversine(teePos, { lat, lng });
-    const distFromTarget = haversine(targetPos, { lat, lng });
-    const shot = { id: Date.now(), lat, lng, distFromTee, distFromTarget, num: shots.length + 1 };
+    if (!teePos || !targetPos) { alert('Set tee and target first.'); return; }
+    var shot = {
+      id: Date.now(), lat: lat, lng: lng, num: shots.length + 1,
+      distFromTee: haversine(teePos, { lat: lat, lng: lng }),
+      distFromTarget: haversine(targetPos, { lat: lat, lng: lng })
+    };
     shots.push(shot);
     saveHistory();
     drawShotMarker(shot);
@@ -423,179 +299,113 @@ function handleMapClick(e) {
   }
 }
 
-// ─── Markers ──────────────────────────────────────────────────────────────────
 function placeTeeMarker() {
   if (teeMarker) teeMarker.setMap(null);
   teeMarker = new google.maps.Marker({
-    position: teePos,
-    map,
-    title: 'Tee',
+    position: teePos, map: map, title: 'Tee',
     icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 10,
-      fillColor: '#c8a84b',
-      fillOpacity: 1,
-      strokeColor: '#0f1f17',
-      strokeWeight: 2,
+      path: google.maps.SymbolPath.CIRCLE, scale: 10,
+      fillColor: '#c8a84b', fillOpacity: 1, strokeColor: '#0f1f17', strokeWeight: 2
     },
     label: { text: 'T', color: '#0f1f17', fontWeight: 'bold', fontSize: '11px' },
-    zIndex: 10,
+    zIndex: 10
   });
-  teeMarker.addListener('click', () => { if (mode === 'tee') { teePos = null; teeMarker.setMap(null); } });
 }
 
 function placeTargetMarker() {
   if (targetMarker) targetMarker.setMap(null);
   targetMarker = new google.maps.Marker({
-    position: targetPos,
-    map,
-    title: 'Target',
+    position: targetPos, map: map, title: 'Target',
     icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 10,
-      fillColor: '#c0392b',
-      fillOpacity: 1,
-      strokeColor: '#fff',
-      strokeWeight: 2,
+      path: google.maps.SymbolPath.CIRCLE, scale: 10,
+      fillColor: '#c0392b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2
     },
     label: { text: '⚑', color: '#fff', fontSize: '12px' },
-    zIndex: 10,
+    zIndex: 10
   });
 }
 
 function drawShotMarker(shot) {
-  const marker = new google.maps.Marker({
-    position: { lat: shot.lat, lng: shot.lng },
-    map,
-    title: `Shot ${shot.num}`,
+  var marker = new google.maps.Marker({
+    position: { lat: shot.lat, lng: shot.lng }, map: map,
     icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: '#4a9060',
-      fillOpacity: 0.9,
-      strokeColor: '#f5f0e8',
-      strokeWeight: 1.5,
+      path: google.maps.SymbolPath.CIRCLE, scale: 8,
+      fillColor: '#4a9060', fillOpacity: 0.9, strokeColor: '#f5f0e8', strokeWeight: 1.5
     },
     label: { text: String(shot.num), color: '#f5f0e8', fontSize: '10px', fontWeight: '500' },
-    zIndex: 5,
+    zIndex: 5
   });
   shot._marker = marker;
-
-  const infoWindow = new google.maps.InfoWindow({
-    content: `<div style="font-family:monospace;font-size:12px;color:#0f1f17">
-      <b>Shot ${shot.num}</b><br>
-      From tee: <b>${yds(shot.distFromTee)} yds</b><br>
-      From target: <b>${yds(shot.distFromTarget)} yds</b>
-    </div>`
+  var iw = new google.maps.InfoWindow({
+    content: '<div style="font-family:monospace;font-size:12px;color:#111"><b>Shot ' + shot.num +
+      '</b><br>From tee: <b>' + yds(shot.distFromTee) + ' yds</b><br>From target: <b>' +
+      yds(shot.distFromTarget) + ' yds</b></div>'
   });
-  marker.addListener('click', () => infoWindow.open(map, marker));
+  marker.addListener('click', function() { iw.open(map, marker); });
 }
 
 function drawLines() {
-  // Clear old lines
-  shotLines.forEach(l => l.setMap(null));
+  shotLines.forEach(function(l) { l.setMap(null); });
   shotLines = [];
   if (distanceLine) { distanceLine.setMap(null); distanceLine = null; }
-
   if (!teePos || !targetPos) return;
-
-  // Tee to target line
   distanceLine = new google.maps.Polyline({
-    path: [teePos, targetPos],
-    geodesic: true,
-    strokeColor: '#c8a84b',
-    strokeOpacity: 0.5,
-    strokeWeight: 1.5,
-    map,
+    path: [teePos, targetPos], geodesic: true,
+    strokeColor: '#c8a84b', strokeOpacity: 0.5, strokeWeight: 1.5, map: map
   });
-
-  // Lines from tee to each shot
-  shots.forEach(shot => {
-    const line = new google.maps.Polyline({
-      path: [{ lat: shot.lat, lng: shot.lng }, targetPos],
-      geodesic: true,
-      strokeColor: '#4a9060',
-      strokeOpacity: 0.6,
-      strokeWeight: 1,
-      map,
+  shots.forEach(function(shot) {
+    var line = new google.maps.Polyline({
+      path: [{ lat: shot.lat, lng: shot.lng }, targetPos], geodesic: true,
+      strokeColor: '#4a9060', strokeOpacity: 0.6, strokeWeight: 1, map: map
     });
     shotLines.push(line);
   });
 }
 
-// ─── Render existing markers from history ─────────────────────────────────────
 function renderAll() {
-  shots.forEach(shot => drawShotMarker(shot));
+  shots.forEach(function(s) { drawShotMarker(s); });
   drawLines();
 }
 
-// ─── Info Panel ───────────────────────────────────────────────────────────────
 function renderPanel() {
-  const panel = document.getElementById('info-panel');
-
-  if (shots.length === 0 && !teePos) {
-    panel.innerHTML = `<div class="hint">Tap the map to set your <b style="color:var(--gold)">tee</b> position first.</div>`;
-    return;
-  }
+  var panel = document.getElementById('info-panel');
   if (!teePos) {
-    panel.innerHTML = `<div class="hint">Tap to place your <b style="color:var(--gold)">tee</b>.</div>`;
+    panel.innerHTML = '<div class="hint">Tap the map to set your <b style="color:var(--gold)">tee</b>.</div>';
     return;
   }
   if (!targetPos) {
-    panel.innerHTML = `<div class="hint">Now tap to place the <b style="color:var(--flag-red)">target / pin</b>.</div>`;
+    panel.innerHTML = '<div class="hint">Now tap to place the <b style="color:var(--flag-red)">pin / target</b>.</div>';
     return;
   }
-
-  const teeToTarget = haversine(teePos, targetPos);
-  let html = `
-    <div class="panel-title">Hole Info</div>
-    <div class="stats-row">
-      <div class="stat-box">
-        <div class="stat-label">Tee → Target</div>
-        <div class="stat-value">${yds(teeToTarget)}</div>
-        <div class="stat-unit">yards</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Shots Logged</div>
-        <div class="stat-value">${shots.length}</div>
-        <div class="stat-unit">this hole</div>
-      </div>
-    </div>`;
-
+  var ttl = haversine(teePos, targetPos);
+  var html = '<div class="panel-title">Hole Info</div>' +
+    '<div class="stats-row">' +
+    '<div class="stat-box"><div class="stat-label">Tee → Target</div><div class="stat-value">' + yds(ttl) + '</div><div class="stat-unit">yards</div></div>' +
+    '<div class="stat-box"><div class="stat-label">Shots Logged</div><div class="stat-value">' + shots.length + '</div><div class="stat-unit">this hole</div></div>' +
+    '</div>';
   if (shots.length > 0) {
-    html += `<div class="panel-title">Shot History</div><div class="shot-list">`;
-    shots.forEach(s => {
-      html += `
-        <div class="shot-item">
-          <div class="shot-num">${s.num}</div>
-          <div class="shot-info">
-            <div class="shot-distances">
-              <div class="shot-dist-item">📏 Tee: <span>${yds(s.distFromTee)} yds</span></div>
-              <div class="shot-dist-item">🚩 Target: <span>${yds(s.distFromTarget)} yds</span></div>
-            </div>
-          </div>
-          <button class="shot-delete" onclick="deleteShot(${s.id})" title="Remove shot">✕</button>
-        </div>`;
+    html += '<div class="panel-title">Shot History</div><div class="shot-list">';
+    shots.forEach(function(s) {
+      html += '<div class="shot-item">' +
+        '<div class="shot-num">' + s.num + '</div>' +
+        '<div class="shot-info"><div class="shot-distances">' +
+        '<div class="shot-dist-item">📏 Tee: <span>' + yds(s.distFromTee) + ' yds</span></div>' +
+        '<div class="shot-dist-item">🚩 Pin: <span>' + yds(s.distFromTarget) + ' yds</span></div>' +
+        '</div></div>' +
+        '<button class="shot-delete" onclick="deleteShot(' + s.id + ')">✕</button>' +
+        '</div>';
     });
-    html += `</div>`;
+    html += '</div>';
   }
-
-  html += `
-    <div class="action-row">
-      <button class="action-btn" onclick="newHole()">New Hole</button>
-      <button class="action-btn danger" onclick="clearAll()">Clear All</button>
-    </div>`;
-
+  html += '<div class="action-row"><button class="action-btn" onclick="newHole()">New Hole</button><button class="action-btn" onclick="clearAll()">Clear All</button></div>';
   panel.innerHTML = html;
 }
 
-// ─── Actions ──────────────────────────────────────────────────────────────────
 function deleteShot(id) {
-  const shot = shots.find(s => s.id === id);
+  var shot = shots.find(function(s) { return s.id === id; });
   if (shot && shot._marker) shot._marker.setMap(null);
-  shots = shots.filter(s => s.id !== id);
-  // Renumber
-  shots.forEach((s, i) => {
+  shots = shots.filter(function(s) { return s.id !== id; });
+  shots.forEach(function(s, i) {
     s.num = i + 1;
     if (s._marker) s._marker.setLabel({ text: String(s.num), color: '#f5f0e8', fontSize: '10px', fontWeight: '500' });
   });
@@ -605,23 +415,36 @@ function deleteShot(id) {
 }
 
 function newHole() {
-  // Clear shots only, keep map
-  shots.forEach(s => { if (s._marker) s._marker.setMap(null); });
+  shots.forEach(function(s) { if (s._marker) s._marker.setMap(null); });
   shots = [];
   if (teeMarker) { teeMarker.setMap(null); teeMarker = null; }
   if (targetMarker) { targetMarker.setMap(null); targetMarker = null; }
   teePos = null; targetPos = null;
-  shotLines.forEach(l => l.setMap(null)); shotLines = [];
+  shotLines.forEach(function(l) { l.setMap(null); });
+  shotLines = [];
   if (distanceLine) { distanceLine.setMap(null); distanceLine = null; }
+  // Reset to Rock Creek Hole 1
+  teePos = { lat: ROCK_CREEK_TEE.lat, lng: ROCK_CREEK_TEE.lng };
+  placeTeeMarker();
+  map.panTo(ROCK_CREEK_TEE);
   saveHistory();
-  setMode('tee');
+  setMode('target');
   renderPanel();
 }
 
 function clearAll() {
-  if (!confirm('Clear all shots and markers?')) return;
-  newHole();
+  if (!confirm('Clear everything?')) return;
+  shots.forEach(function(s) { if (s._marker) s._marker.setMap(null); });
+  shots = [];
+  if (teeMarker) { teeMarker.setMap(null); teeMarker = null; }
+  if (targetMarker) { targetMarker.setMap(null); targetMarker = null; }
+  teePos = null; targetPos = null;
+  shotLines.forEach(function(l) { l.setMap(null); });
+  shotLines = [];
+  if (distanceLine) { distanceLine.setMap(null); distanceLine = null; }
   localStorage.removeItem('golf_shots');
+  setMode('tee');
+  renderPanel();
 }
 
 function resetNorth() {
@@ -629,7 +452,7 @@ function resetNorth() {
 }
 
 function toggleMapType() {
-  const btn = document.getElementById('map-type-btn');
+  var btn = document.getElementById('map-type-btn');
   if (mapType === 'hybrid') {
     mapType = 'roadmap';
     map.setMapTypeId('roadmap');
@@ -641,27 +464,19 @@ function toggleMapType() {
   }
 }
 
-// ─── Haversine Distance (meters) ─────────────────────────────────────────────
 function haversine(a, b) {
-  const R = 6371000;
-  const φ1 = a.lat * Math.PI / 180, φ2 = b.lat * Math.PI / 180;
-  const Δφ = (b.lat - a.lat) * Math.PI / 180;
-  const Δλ = (b.lng - a.lng) * Math.PI / 180;
-  const x = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+  var R = 6371000;
+  var p1 = a.lat * Math.PI / 180, p2 = b.lat * Math.PI / 180;
+  var dp = (b.lat - a.lat) * Math.PI / 180, dl = (b.lng - a.lng) * Math.PI / 180;
+  var x = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
-function yds(meters) {
-  return Math.round(meters * 1.09361);
-}
+function yds(m) { return Math.round(m * 1.09361); }
 
-// ─── Auto-load API key if saved ───────────────────────────────────────────────
-window.addEventListener('load', () => {
-  const savedKey = localStorage.getItem('gmaps_key');
-  if (savedKey) {
-    document.getElementById('api-key-input').value = savedKey;
-  }
+window.addEventListener('load', function() {
+  var k = localStorage.getItem('gmaps_key');
+  if (k) document.getElementById('api-key-input').value = k;
 });
 </script>
 </body>
