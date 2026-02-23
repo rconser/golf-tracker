@@ -6,398 +6,443 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Golf Tracker">
-<meta name="theme-color" content="#0a1a10">
+<meta name="theme-color" content="#000">
 <title>⛳ Golf Tracker</title>
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a1a10'/><text y='72' x='50' text-anchor='middle' font-size='60'>⛳</text></svg>">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Cormorant+Garamond:wght@600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@600;700&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --ink:        #0a1a10;
-    --green-dark: #142b1a;
-    --green-mid:  #1e4028;
-    --green-muted:#2d5c3a;
-    --green-light:#4a8c5c;
-    --cream:      #f0ebe0;
-    --sand:       #d4c9a8;
-    --gold:       #c9a84c;
-    --gold-light: #e8c96a;
-    --red:        #b83232;
-    --blue:       #4285F4;
-    --panel-h:    230px;
+    --ink:         #0a1a10;
+    --green-dark:  #0f2318;
+    --green-mid:   #1e4028;
+    --green-muted: #2d5c3a;
+    --green-light: #4a8c5c;
+    --cream:       #f0ebe0;
+    --sand:        #d4c9a8;
+    --gold:        #c9a84c;
+    --gold-light:  #e8c96a;
+    --red:         #b83232;
+    --glass:       rgba(8, 20, 12, 0.82);
+    --glass-border:rgba(74, 140, 92, 0.3);
   }
 
-  html { height: 100%; height: -webkit-fill-available; }
-  body {
-    height: 100%; min-height: -webkit-fill-available;
-    font-family: 'DM Mono', monospace;
-    background: var(--ink); color: var(--cream);
+  html, body {
+    height: 100%; width: 100%;
     overflow: hidden;
+    background: #000;
   }
 
-  #app {
-    display: flex; flex-direction: column;
-    height: 100vh; height: -webkit-fill-available;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+  /* ── Full screen map ── */
+  #map {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
   }
-
-  /* ── Header ── */
-  header {
-    flex-shrink: 0;
-    background: var(--ink);
-    border-bottom: 1px solid var(--green-mid);
-    padding: 10px 14px 8px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: relative; z-index: 10;
-  }
-  .header-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.25rem; font-weight: 700;
-    color: var(--gold); letter-spacing: 0.03em;
-    line-height: 1;
-  }
-  .header-sub {
-    font-size: 0.55rem; color: var(--green-light);
-    letter-spacing: 0.18em; text-transform: uppercase; margin-top: 3px;
-  }
-  .header-right { display: flex; gap: 6px; align-items: center; }
-  .icon-btn {
-    background: var(--green-mid); border: 1px solid var(--green-muted);
-    color: var(--cream); width: 34px; height: 34px;
-    border-radius: 6px; cursor: pointer; font-size: 1rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
-  }
-  .icon-btn:active { background: var(--green-muted); }
-
-  /* ── Mode Bar ── */
-  .mode-bar {
-    flex-shrink: 0;
-    display: flex; gap: 5px;
-    background: var(--ink);
-    padding: 6px 10px 8px;
-    border-bottom: 1px solid var(--green-mid);
-  }
-  .mode-btn {
-    flex: 1; padding: 10px 4px;
-    background: var(--green-dark); border: 1px solid var(--green-mid);
-    color: var(--sand); font-family: 'DM Mono', monospace;
-    font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase;
-    cursor: pointer; border-radius: 5px; transition: all 0.12s;
-    line-height: 1.3;
-  }
-  .mode-btn.active {
-    background: var(--gold); color: var(--ink);
-    border-color: var(--gold-light); font-weight: 500;
-  }
-  .mode-btn .btn-icon { display: block; font-size: 1rem; margin-bottom: 2px; }
-
-  /* ── Map ── */
-  #map { flex: 1; position: relative; }
   .mapboxgl-canvas { outline: none; }
+  .mapboxgl-ctrl-bottom-left,
+  .mapboxgl-ctrl-bottom-right,
+  .mapboxgl-ctrl-top-left,
+  .mapboxgl-ctrl-top-right { display: none !important; }
 
-  /* ── Token Overlay ── */
+  /* ── Token screen ── */
   #token-overlay {
-    position: absolute; inset: 0;
+    position: fixed; inset: 0; z-index: 100;
     background: var(--ink);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    z-index: 50; gap: 14px; padding: 28px;
+    gap: 14px; padding: 32px 24px;
   }
   .overlay-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.6rem; color: var(--gold); text-align: center;
+    font-size: 2rem; color: var(--gold); text-align: center; line-height: 1.1;
   }
   .overlay-sub {
     font-size: 0.68rem; color: var(--sand);
-    text-align: center; line-height: 1.7; max-width: 320px;
+    text-align: center; line-height: 1.8; max-width: 300px;
   }
   #token-input {
-    width: 100%; max-width: 360px;
-    padding: 11px 14px;
+    width: 100%; max-width: 360px; padding: 13px 14px;
     background: var(--green-dark); border: 1px solid var(--gold);
     color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.75rem;
-    border-radius: 5px; outline: none;
+    border-radius: 8px; outline: none;
   }
-  #token-input::placeholder { color: var(--green-light); }
+  #token-input::placeholder { color: var(--green-muted); }
   #load-btn {
-    width: 100%; max-width: 360px; padding: 12px;
+    width: 100%; max-width: 360px; padding: 14px;
     background: var(--gold); color: var(--ink);
     border: none; font-family: 'DM Mono', monospace;
-    font-size: 0.72rem; font-weight: 500;
+    font-size: 0.75rem; font-weight: 500;
     letter-spacing: 0.12em; text-transform: uppercase;
-    cursor: pointer; border-radius: 5px;
+    cursor: pointer; border-radius: 8px;
   }
-  #token-status { font-size: 0.68rem; min-height: 1.2em; color: var(--gold); text-align: center; }
+  #token-status { font-size: 0.68rem; color: var(--gold); text-align: center; min-height: 1.2em; }
   .token-help {
-    font-size: 0.58rem; color: #555; max-width: 340px;
-    line-height: 1.7; text-align: left;
+    font-size: 0.58rem; color: #555; max-width: 320px;
+    line-height: 1.8; text-align: left;
     border-top: 1px solid var(--green-mid); padding-top: 12px;
   }
-  .token-help b { color: #888; }
 
-  /* ── Map Controls ── */
-  .map-ctrl-group {
-    position: absolute; top: 10px; right: 10px;
-    display: none; flex-direction: column; gap: 5px; z-index: 5;
+  /* ── Top bar overlay ── */
+  #top-bar {
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    left: 0; right: 0;
+    z-index: 20;
+    display: none;
+    padding: 10px 12px 0;
+    pointer-events: none;
   }
-  .map-ctrl-group.visible { display: flex; }
-  .ctrl-btn {
-    background: var(--ink); color: var(--gold);
-    border: 1px solid var(--green-muted);
-    font-family: 'DM Mono', monospace; font-size: 0.58rem;
-    padding: 7px 10px; border-radius: 4px; cursor: pointer;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    white-space: nowrap;
-  }
-  .ctrl-btn:active { background: var(--green-dark); }
+  #top-bar.visible { display: block; }
 
-  /* ── Info Panel ── */
-  #info-panel {
-    flex-shrink: 0;
-    background: var(--ink);
-    border-top: 1px solid var(--green-mid);
-    padding: 10px 12px;
-    max-height: var(--panel-h);
+  /* Mode buttons row */
+  .mode-row {
+    display: flex; gap: 6px;
+    pointer-events: all;
+  }
+  .mode-btn {
+    flex: 1;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--sand);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 4px 8px;
+    border-radius: 8px; cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.15s;
+    line-height: 1.4;
+    text-align: center;
+  }
+  .mode-btn .icon { display: block; font-size: 1.1rem; margin-bottom: 1px; }
+  .mode-btn.active {
+    background: var(--gold);
+    border-color: var(--gold-light);
+    color: var(--ink); font-weight: 500;
+  }
+
+  /* ── Bottom stats overlay ── */
+  #bottom-overlay {
+    position: fixed;
+    bottom: env(safe-area-inset-bottom, 0px);
+    left: 0; right: 0;
+    z-index: 20;
+    display: none;
+    padding: 0 12px 12px;
+    pointer-events: none;
+  }
+  #bottom-overlay.visible { display: block; }
+
+  /* Hint pill */
+  .hint-pill {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.62rem; color: var(--sand);
+    text-align: center; letter-spacing: 0.04em;
+    pointer-events: none;
+    margin-bottom: 8px;
+  }
+
+  /* Stats cards */
+  .stats-row {
+    display: flex; gap: 6px; margin-bottom: 8px;
+    pointer-events: none;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 8px 10px; text-align: center;
+  }
+  .stat-label { font-size: 0.48rem; color: var(--green-light); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+  .stat-val { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; color: var(--gold); font-weight: 700; line-height: 1; }
+  .stat-unit { font-size: 0.48rem; color: var(--sand); }
+
+  /* Shot list */
+  #shot-panel {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 160px;
+    pointer-events: all;
+    margin-bottom: 8px;
     overflow-y: auto;
   }
-  #info-panel::-webkit-scrollbar { width: 3px; }
-  #info-panel::-webkit-scrollbar-thumb { background: var(--green-muted); border-radius: 2px; }
-
-  .hint {
-    font-size: 0.62rem; color: var(--green-light);
-    text-align: center; padding: 8px 0;
-    letter-spacing: 0.04em; line-height: 1.5;
-  }
-
-  .section-label {
-    font-size: 0.5rem; letter-spacing: 0.22em; text-transform: uppercase;
-    color: var(--green-muted); margin-bottom: 7px;
-  }
-
-  .stats-row { display: flex; gap: 7px; margin-bottom: 10px; }
-  .stat-box {
-    flex: 1; background: var(--green-dark);
-    border: 1px solid var(--green-mid);
-    border-radius: 5px; padding: 8px 10px; text-align: center;
-  }
-  .stat-label { font-size: 0.5rem; color: var(--green-light); letter-spacing: 0.1em; text-transform: uppercase; }
-  .stat-val { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--gold); font-weight: 700; line-height: 1.1; }
-  .stat-unit { font-size: 0.5rem; color: var(--sand); }
-
-  .shot-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  #shot-panel::-webkit-scrollbar { width: 0; }
   .shot-row {
     display: flex; align-items: center; gap: 8px;
-    background: var(--green-dark); border: 1px solid var(--green-mid);
-    border-radius: 4px; padding: 7px 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(74,140,92,0.15);
+    font-size: 0.62rem;
   }
+  .shot-row:last-child { border-bottom: none; }
   .shot-badge {
-    width: 22px; height: 22px; flex-shrink: 0;
+    width: 20px; height: 20px; border-radius: 50%;
     background: var(--gold); color: var(--ink);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.6rem; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.58rem; font-weight: 500; flex-shrink: 0;
   }
-  .shot-dists { flex: 1; display: flex; gap: 14px; font-size: 0.62rem; }
+  .shot-dists { flex: 1; display: flex; gap: 12px; }
   .shot-dist { color: var(--sand); }
   .shot-dist span { color: var(--cream); font-weight: 500; }
-  .del-btn {
-    background: none; border: none; color: var(--green-muted);
-    cursor: pointer; font-size: 0.85rem; padding: 2px 5px;
-    transition: color 0.12s;
-  }
-  .del-btn:active { color: var(--red); }
+  .del-btn { background: none; border: none; color: var(--green-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px; }
 
-  .action-row { display: flex; gap: 7px; }
+  /* Action buttons */
+  .action-row {
+    display: flex; gap: 6px;
+    pointer-events: all;
+  }
   .action-btn {
-    flex: 1; padding: 11px;
-    background: var(--green-dark); border: 1px solid var(--green-mid);
-    color: var(--cream); font-family: 'DM Mono', monospace;
-    font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
-    cursor: pointer; border-radius: 4px; transition: all 0.12s;
+    flex: 1; padding: 10px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; border-radius: 8px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
-  .action-btn:active { background: var(--green-mid); }
 
-  /* Mapbox overrides */
-  .mapboxgl-ctrl-bottom-left,
-  .mapboxgl-ctrl-bottom-right { display: none; }
+  /* ── Map corner controls ── */
+  #map-controls {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 88px);
+    right: 12px;
+    z-index: 20;
+    display: none;
+    flex-direction: column; gap: 6px;
+    pointer-events: all;
+  }
+  #map-controls.visible { display: flex; }
+  .ctrl-btn {
+    width: 38px; height: 38px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--cream);
+    font-size: 1rem;
+    border-radius: 8px; cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── Yardage markers on map ── */
+  .yd-marker {
+    background: rgba(8,20,12,0.85);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem; font-weight: 500;
+    padding: 3px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  }
+  .yd-marker.pin {
+    border-color: #e8c96a;
+    color: #e8c96a;
+  }
+  .yd-marker.shot-label {
+    border-color: var(--green-light);
+    color: var(--cream);
+    font-size: 0.58rem;
+  }
+
+  /* Blue dot */
+  .blue-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #4285F4; border: 3px solid #fff;
+    box-shadow: 0 0 0 3px rgba(66,133,244,0.35);
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <div>
-      <div class="header-title">⛳ Shot Tracker</div>
-      <div class="header-sub">Rock Creek CC</div>
-    </div>
-    <div class="header-right">
-      <button class="icon-btn" onclick="toggleSatellite()" title="Toggle satellite">🛰</button>
-      <button class="icon-btn" onclick="resetNorth()" title="Reset north">⬆</button>
-    </div>
-  </header>
 
-  <div class="mode-bar">
+<!-- Full screen map -->
+<div id="map"></div>
+
+<!-- Token entry screen -->
+<div id="token-overlay">
+  <div class="overlay-title">⛳<br>Golf Tracker</div>
+  <div class="overlay-sub">
+    Enter your Mapbox token to launch.<br>
+    Get one free at <b style="color:var(--gold)">mapbox.com</b>
+  </div>
+  <input id="token-input" type="text" placeholder="pk.eyJ1..." autocomplete="off" spellcheck="false"/>
+  <button id="load-btn" onclick="initMap()">Launch</button>
+  <div id="token-status"></div>
+  <div class="token-help">
+    1. mapbox.com → sign up (free)<br>
+    2. Dashboard → copy Default public token (pk…)<br>
+    3. Paste above — saved locally, never needed again
+  </div>
+</div>
+
+<!-- Top overlay: mode buttons -->
+<div id="top-bar">
+  <div class="mode-row">
     <button class="mode-btn active" id="btn-tee" onclick="setMode('tee')">
-      <span class="btn-icon">📍</span>Set Tee
+      <span class="icon">📍</span>Tee
     </button>
     <button class="mode-btn" id="btn-target" onclick="setMode('target')">
-      <span class="btn-icon">🚩</span>Set Pin
+      <span class="icon">⛳</span>Pin
     </button>
     <button class="mode-btn" id="btn-shot" onclick="setMode('shot')">
-      <span class="btn-icon">🏌️</span>Mark Shot
+      <span class="icon">🏌️</span>Shot
     </button>
   </div>
+</div>
 
-  <div id="map">
-    <div id="token-overlay">
-      <div class="overlay-title">⛳ Golf Shot Tracker</div>
-      <div class="overlay-sub">
-        Enter your Mapbox access token to get started.<br>
-        Get a free token at <b style="color:var(--gold)">mapbox.com</b> → sign up → copy your default public token.
-      </div>
-      <input id="token-input" type="text" placeholder="pk.eyJ1..." autocomplete="off" spellcheck="false" />
-      <button id="load-btn" onclick="initMap()">Launch Map</button>
-      <div id="token-status"></div>
-      <div class="token-help">
-        <b>Setup (2 min):</b><br>
-        1. Go to mapbox.com → Create free account<br>
-        2. Dashboard → copy your <b>Default public token</b><br>
-        3. Paste above — token is saved locally on your device
-      </div>
-    </div>
-  </div>
+<!-- Map controls: satellite + north -->
+<div id="map-controls">
+  <button class="ctrl-btn" onclick="toggleSatellite()" title="Satellite">🛰</button>
+  <button class="ctrl-btn" onclick="resetNorth()" title="North up">⬆</button>
+</div>
 
-  <div id="info-panel">
-    <div class="hint">Enter your Mapbox token above to get started.</div>
+<!-- Bottom overlay: stats + shots -->
+<div id="bottom-overlay">
+  <div id="hint-area"></div>
+  <div id="stats-area"></div>
+  <div id="shot-panel" style="display:none"></div>
+  <div class="action-row" id="action-row" style="display:none">
+    <button class="action-btn" onclick="newHole()">New Hole</button>
+    <button class="action-btn" onclick="clearAll()">Clear All</button>
   </div>
 </div>
 
 <script>
-// ── Rock Creek CC Hole 1 Tee: 45°33'21.17"N  122°52'51.58"W ─────────────────
+// ── Rock Creek CC Hole 1 Tee: 45°33'21.17"N 122°52'51.58"W ──────────────────
 var ROCK_CREEK = { lng: -122.880994, lat: 45.555881 };
 
-// ── State ─────────────────────────────────────────────────────────────────────
 var map;
 var teePos = null, targetPos = null;
-var teeLng = null, teeLat = null;
 var teeMarker = null, targetMarker = null;
-var shots = [];
-var shotMarkers = [];
-var mode = 'tee';
+var teeLabelMarker = null, pinLabelMarker = null;
+var shots = [], mode = 'tee';
 var isSatellite = true;
-var watchId = null;
-var blueDotEl = null, blueDotMarker = null;
+var blueDotMarker = null;
+var shotLabelMarkers = [];
 
 // ── Storage ───────────────────────────────────────────────────────────────────
-function loadHistory() {
+function save() {
   try {
-    var s = localStorage.getItem('gst_shots');
-    if (s) shots = JSON.parse(s);
-  } catch(e) { shots = []; }
-}
-
-function saveHistory() {
-  try {
-    localStorage.setItem('gst_shots', JSON.stringify(
-      shots.map(function(s) {
-        return { id: s.id, lng: s.lng, lat: s.lat, num: s.num, dTee: s.dTee, dPin: s.dPin };
-      })
+    localStorage.setItem('gst2_shots', JSON.stringify(
+      shots.map(function(s) { return { id:s.id, lng:s.lng, lat:s.lat, num:s.num, dTee:s.dTee, dPin:s.dPin }; })
     ));
+    if (teePos) localStorage.setItem('gst2_tee', JSON.stringify(teePos));
+    if (targetPos) localStorage.setItem('gst2_pin', JSON.stringify(targetPos));
   } catch(e) {}
 }
 
-// ── Init Map ──────────────────────────────────────────────────────────────────
+function loadSaved() {
+  try {
+    var s = localStorage.getItem('gst2_shots');
+    if (s) shots = JSON.parse(s);
+    var t = localStorage.getItem('gst2_tee');
+    if (t) teePos = JSON.parse(t);
+    var p = localStorage.getItem('gst2_pin');
+    if (p) targetPos = JSON.parse(p);
+  } catch(e) {}
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 function initMap() {
   var token = document.getElementById('token-input').value.trim();
-  if (!token) { alert('Please enter your Mapbox token'); return; }
+  if (!token) { alert('Paste your Mapbox token first'); return; }
   if (!token.startsWith('pk.')) {
-    setStatus('⚠️ Token should start with pk. — check you copied the public token', '#e67e22');
+    document.getElementById('token-status').textContent = '⚠️ Should start with pk. — check you copied the public token';
     return;
   }
-
   localStorage.setItem('gst_token', token);
-  setStatus('⏳ Loading map...', 'var(--gold)');
+  document.getElementById('token-status').textContent = '⏳ Loading...';
 
   mapboxgl.accessToken = token;
 
-  try {
-    map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [ROCK_CREEK.lng, ROCK_CREEK.lat],
-      zoom: 18,
-      pitch: 0,
-      bearing: 0,
-      attributionControl: false
-    });
-  } catch(e) {
-    setStatus('❌ Failed to create map: ' + e.message, '#e74c3c');
-    return;
-  }
+  map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    center: [ROCK_CREEK.lng, ROCK_CREEK.lat],
+    zoom: 18,
+    pitch: 0,
+    bearing: 0,
+    attributionControl: false,
+    logoPosition: 'bottom-left'
+  });
 
   map.on('error', function(e) {
-    setStatus('❌ Map error — check your token is valid', '#e74c3c');
-    console.error('Mapbox error:', e);
+    document.getElementById('token-status').textContent = '❌ Invalid token or network error';
+    console.error(e);
   });
 
   map.on('load', function() {
     document.getElementById('token-overlay').style.display = 'none';
+    document.getElementById('top-bar').classList.add('visible');
+    document.getElementById('bottom-overlay').classList.add('visible');
+    document.getElementById('map-controls').classList.add('visible');
 
-    // Add click handler
-    map.on('click', handleMapClick);
+    map.on('click', handleClick);
 
-    // Load history and render
-    loadHistory();
+    loadSaved();
 
-    // Auto-place tee at Rock Creek Hole 1 if starting fresh
-    if (shots.length === 0 && !teePos) {
+    if (!teePos && shots.length === 0) {
+      // Fresh start — auto-place tee at Rock Creek Hole 1
       teePos = [ROCK_CREEK.lng, ROCK_CREEK.lat];
       placeTeeMarker();
       setMode('target');
     } else {
-      renderSavedShots();
+      // Restore saved state
+      if (teePos) placeTeeMarker();
+      if (targetPos) placeTargetMarker();
+      shots.forEach(function(s) { placeShotMarker(s); });
+      if (teePos && targetPos) drawLines();
     }
 
     renderPanel();
-
-    // Start GPS
     startGPS();
   });
 }
 
-// ── GPS Blue Dot ──────────────────────────────────────────────────────────────
+// ── GPS ───────────────────────────────────────────────────────────────────────
 function startGPS() {
   if (!navigator.geolocation) return;
-
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    updateBlueDot(pos.coords.longitude, pos.coords.latitude);
-    watchId = navigator.geolocation.watchPosition(
-      function(p) { updateBlueDot(p.coords.longitude, p.coords.latitude); },
-      function(e) { console.warn('GPS:', e.message); },
+  navigator.geolocation.getCurrentPosition(function(p) {
+    placeBlueDot(p.coords.longitude, p.coords.latitude);
+    navigator.geolocation.watchPosition(
+      function(p) { placeBlueDot(p.coords.longitude, p.coords.latitude); },
+      null,
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
-  }, function(e) {
-    console.warn('GPS init:', e.message);
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  }, null, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 }
 
-function updateBlueDot(lng, lat) {
+function placeBlueDot(lng, lat) {
   if (!map) return;
   if (!blueDotMarker) {
-    blueDotEl = document.createElement('div');
-    blueDotEl.style.cssText = [
-      'width:16px', 'height:16px', 'border-radius:50%',
-      'background:#4285F4', 'border:3px solid #fff',
-      'box-shadow:0 0 0 2px rgba(66,133,244,0.4)',
-      'pointer-events:none'
-    ].join(';');
-    blueDotMarker = new mapboxgl.Marker({ element: blueDotEl, anchor: 'center' })
-      .setLngLat([lng, lat])
-      .addTo(map);
+    var el = document.createElement('div');
+    el.className = 'blue-dot';
+    blueDotMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat]).addTo(map);
   } else {
     blueDotMarker.setLngLat([lng, lat]);
   }
@@ -411,283 +456,313 @@ function setMode(m) {
   map.getCanvas().style.cursor = 'crosshair';
 }
 
-// ── Map Click ─────────────────────────────────────────────────────────────────
-function handleMapClick(e) {
+// ── Click Handler ─────────────────────────────────────────────────────────────
+function handleClick(e) {
   var lng = e.lngLat.lng, lat = e.lngLat.lat;
 
   if (mode === 'tee') {
     teePos = [lng, lat];
     placeTeeMarker();
     setMode('target');
+    save();
 
   } else if (mode === 'target') {
     targetPos = [lng, lat];
     placeTargetMarker();
     setMode('shot');
+    drawLines();
+    save();
     renderPanel();
 
   } else if (mode === 'shot') {
-    if (!teePos || !targetPos) { alert('Please set tee and pin first.'); return; }
+    if (!teePos || !targetPos) { alert('Set tee and pin first.'); return; }
     var dTee = haversine(teePos[1], teePos[0], lat, lng);
     var dPin = haversine(targetPos[1], targetPos[0], lat, lng);
     var shot = { id: Date.now(), lng: lng, lat: lat, num: shots.length + 1, dTee: dTee, dPin: dPin };
     shots.push(shot);
-    saveHistory();
     placeShotMarker(shot);
     drawLines();
+    save();
     renderPanel();
   }
 }
 
 // ── Markers ───────────────────────────────────────────────────────────────────
-function makeEl(html, size) {
-  var el = document.createElement('div');
-  el.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:' + (size||'1.2rem') + ';filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));pointer-events:none;';
-  el.innerHTML = html;
-  return el;
-}
-
 function placeTeeMarker() {
   if (teeMarker) teeMarker.remove();
+  if (teeLabelMarker) teeLabelMarker.remove();
+
+  // Tee dot
   var el = document.createElement('div');
-  el.style.cssText = 'width:28px;height:28px;border-radius:50%;background:#c9a84c;border:2px solid #0a1a10;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#0a1a10;font-family:DM Mono,monospace;box-shadow:0 2px 6px rgba(0,0,0,0.5);';
+  el.style.cssText = 'width:26px;height:26px;border-radius:50%;background:#c9a84c;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:0.55rem;font-weight:700;color:#0a1a10;font-family:"DM Mono",monospace;box-shadow:0 2px 8px rgba(0,0,0,0.6);';
   el.textContent = 'TEE';
   teeMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(teePos)
-    .addTo(map);
+    .setLngLat(teePos).addTo(map);
+
+  updateYardageMarkers();
   renderPanel();
 }
 
 function placeTargetMarker() {
   if (targetMarker) targetMarker.remove();
+  if (pinLabelMarker) pinLabelMarker.remove();
+
+  // Pin flag
   var el = document.createElement('div');
-  el.style.cssText = 'font-size:1.6rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7));line-height:1;';
+  el.style.cssText = 'font-size:1.8rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.8));line-height:1;pointer-events:none;';
   el.textContent = '⛳';
   targetMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-    .setLngLat(targetPos)
-    .addTo(map);
+    .setLngLat(targetPos).addTo(map);
+
+  updateYardageMarkers();
+  renderPanel();
 }
 
 function placeShotMarker(shot) {
+  // Shot circle
   var el = document.createElement('div');
-  el.style.cssText = 'width:24px;height:24px;border-radius:50%;background:#1e4028;border:2px solid #4a8c5c;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:500;color:#f0ebe0;font-family:DM Mono,monospace;box-shadow:0 1px 4px rgba(0,0,0,0.5);';
+  el.style.cssText = 'width:24px;height:24px;border-radius:50%;background:rgba(14,40,22,0.9);border:2px solid #4a8c5c;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:500;color:#f0ebe0;font-family:"DM Mono",monospace;box-shadow:0 1px 6px rgba(0,0,0,0.6);cursor:pointer;';
   el.textContent = shot.num;
-  var marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat([shot.lng, shot.lat])
-    .addTo(map);
-  shot._marker = marker;
-  shotMarkers.push(marker);
 
-  // Popup on tap
-  var popup = new mapboxgl.Popup({ offset: 16, closeButton: false })
-    .setHTML('<div style="font-family:DM Mono,monospace;font-size:11px;color:#111;line-height:1.6"><b>Shot ' + shot.num + '</b><br>🏌️ Tee: <b>' + yds(shot.dTee) + ' yds</b><br>⛳ Pin: <b>' + yds(shot.dPin) + ' yds</b></div>');
-  el.style.pointerEvents = 'auto';
-  el.style.cursor = 'pointer';
+  var marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+    .setLngLat([shot.lng, shot.lat]).addTo(map);
+  shot._marker = marker;
+
+  // Yardage label for shot
+  var lblEl = document.createElement('div');
+  lblEl.className = 'yd-marker shot-label';
+  lblEl.innerHTML = '📏 ' + yds(shot.dTee) + ' · ⛳ ' + yds(shot.dPin) + ' yds';
+  var lblMarker = new mapboxgl.Marker({ element: lblEl, anchor: 'bottom', offset: [0, -16] })
+    .setLngLat([shot.lng, shot.lat]).addTo(map);
+  shot._label = lblMarker;
+  shotLabelMarkers.push(lblMarker);
+
+  // Toggle label on tap
+  var labelVisible = true;
   el.addEventListener('click', function(e) {
     e.stopPropagation();
-    marker.setPopup(popup);
-    popup.addTo(map);
+    labelVisible = !labelVisible;
+    lblEl.style.display = labelVisible ? 'block' : 'none';
   });
 }
 
-function renderSavedShots() {
-  shots.forEach(function(s) { placeShotMarker(s); });
-  if (teePos && targetPos) drawLines();
+// ── Yardage Markers ───────────────────────────────────────────────────────────
+function updateYardageMarkers() {
+  if (teeLabelMarker) { teeLabelMarker.remove(); teeLabelMarker = null; }
+  if (pinLabelMarker) { pinLabelMarker.remove(); pinLabelMarker = null; }
+
+  if (teePos && targetPos) {
+    var d = haversine(teePos[1], teePos[0], targetPos[1], targetPos[0]);
+    var mid = midpoint(teePos, targetPos);
+
+    // Distance label floating on the line midpoint
+    var midEl = document.createElement('div');
+    midEl.className = 'yd-marker';
+    midEl.innerHTML = '↕ ' + yds(d) + ' yds to pin';
+    teeLabelMarker = new mapboxgl.Marker({ element: midEl, anchor: 'center' })
+      .setLngLat(mid).addTo(map);
+
+    // Pin label above pin
+    var pinEl = document.createElement('div');
+    pinEl.className = 'yd-marker pin';
+    pinEl.innerHTML = '⛳ ' + yds(d) + ' yds';
+    pinLabelMarker = new mapboxgl.Marker({ element: pinEl, anchor: 'bottom', offset: [0, -36] })
+      .setLngLat(targetPos).addTo(map);
+  } else if (teePos && !targetPos) {
+    // No pin yet — show placeholder
+    var teeEl = document.createElement('div');
+    teeEl.className = 'yd-marker';
+    teeEl.innerHTML = '📍 Tap to set pin';
+    teeLabelMarker = new mapboxgl.Marker({ element: teeEl, anchor: 'bottom', offset: [0, -28] })
+      .setLngLat(teePos).addTo(map);
+  }
+}
+
+function midpoint(a, b) {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 }
 
 // ── Lines ─────────────────────────────────────────────────────────────────────
 function drawLines() {
-  if (!map || !teePos || !targetPos) return;
+  removeLayer('lyr-tee-pin'); removeSource('src-tee-pin');
+  removeLayer('lyr-shots');   removeSource('src-shots');
 
-  // Remove existing
-  ['line-tee-pin', 'line-tee-pin-layer'].forEach(function(id) {
-    if (map.getLayer(id)) map.removeLayer(id);
-  });
-  ['line-shots', 'line-shots-layer'].forEach(function(id) {
-    if (map.getLayer(id)) map.removeLayer(id);
-  });
-  ['src-tee-pin', 'src-shots'].forEach(function(id) {
-    if (map.getSource(id)) map.removeSource(id);
-  });
+  if (!teePos || !targetPos) return;
 
-  // Tee to pin line
-  map.addSource('src-tee-pin', {
+  // Tee to pin
+  addSource('src-tee-pin', {
     type: 'geojson',
-    data: {
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: [teePos, targetPos] }
-    }
+    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [teePos, targetPos] } }
   });
-  map.addLayer({
-    id: 'line-tee-pin-layer',
-    type: 'line',
-    source: 'src-tee-pin',
-    paint: { 'line-color': '#c9a84c', 'line-width': 1.5, 'line-opacity': 0.6, 'line-dasharray': [3, 3] }
+  addLayer({
+    id: 'lyr-tee-pin', type: 'line', source: 'src-tee-pin',
+    paint: { 'line-color': '#c9a84c', 'line-width': 1.5, 'line-opacity': 0.5, 'line-dasharray': [4, 3] }
   });
 
   // Shot to pin lines
   if (shots.length > 0) {
-    var shotCoords = shots.map(function(s) {
-      return { type: 'Feature', geometry: { type: 'LineString', coordinates: [[s.lng, s.lat], targetPos] } };
-    });
-    map.addSource('src-shots', {
+    addSource('src-shots', {
       type: 'geojson',
-      data: { type: 'FeatureCollection', features: shotCoords }
+      data: {
+        type: 'FeatureCollection',
+        features: shots.map(function(s) {
+          return { type: 'Feature', geometry: { type: 'LineString', coordinates: [[s.lng, s.lat], targetPos] } };
+        })
+      }
     });
-    map.addLayer({
-      id: 'line-shots-layer',
-      type: 'line',
-      source: 'src-shots',
+    addLayer({
+      id: 'lyr-shots', type: 'line', source: 'src-shots',
       paint: { 'line-color': '#4a8c5c', 'line-width': 1, 'line-opacity': 0.5 }
     });
   }
 }
 
+function addSource(id, data) { if (!map.getSource(id)) map.addSource(id, data); }
+function addLayer(spec) { if (!map.getLayer(spec.id)) map.addLayer(spec); }
+function removeLayer(id) { if (map.getLayer(id)) map.removeLayer(id); }
+function removeSource(id) { if (map.getSource(id)) map.removeSource(id); }
+
 // ── Panel ─────────────────────────────────────────────────────────────────────
 function renderPanel() {
-  var panel = document.getElementById('info-panel');
+  var hint = document.getElementById('hint-area');
+  var stats = document.getElementById('stats-area');
+  var shotPanel = document.getElementById('shot-panel');
+  var actionRow = document.getElementById('action-row');
+
+  hint.innerHTML = '';
+  stats.innerHTML = '';
+  shotPanel.innerHTML = '';
+  shotPanel.style.display = 'none';
+  actionRow.style.display = 'none';
 
   if (!teePos) {
-    panel.innerHTML = '<div class="hint">Tap the map to place your <b style="color:var(--gold)">tee</b>.</div>';
+    hint.innerHTML = '<div class="hint-pill">Tap the map to place the <b style="color:var(--gold)">tee</b></div>';
     return;
   }
   if (!targetPos) {
-    panel.innerHTML = '<div class="hint">Now tap to place the <b style="color:#e8c96a">⛳ pin</b>.</div>';
+    hint.innerHTML = '<div class="hint-pill">Now tap the <b style="color:#e8c96a">pin / hole</b> location</div>';
     return;
   }
 
   var ttd = haversine(teePos[1], teePos[0], targetPos[1], targetPos[0]);
 
-  var html = '<div class="section-label">Hole</div>';
-  html += '<div class="stats-row">';
-  html += '<div class="stat-box"><div class="stat-label">Tee → Pin</div><div class="stat-val">' + yds(ttd) + '</div><div class="stat-unit">yards</div></div>';
-  html += '<div class="stat-box"><div class="stat-label">Shots</div><div class="stat-val">' + shots.length + '</div><div class="stat-unit">logged</div></div>';
-  html += '</div>';
+  stats.innerHTML =
+    '<div class="stats-row">' +
+    '<div class="stat-card"><div class="stat-label">Tee → Pin</div><div class="stat-val">' + yds(ttd) + '</div><div class="stat-unit">yards</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Shots</div><div class="stat-val">' + shots.length + '</div><div class="stat-unit">logged</div></div>' +
+    '</div>';
 
   if (shots.length > 0) {
-    html += '<div class="section-label">Shots</div><div class="shot-list">';
+    shotPanel.style.display = 'block';
+    var html = '';
     shots.forEach(function(s) {
-      html += '<div class="shot-row">';
-      html += '<div class="shot-badge">' + s.num + '</div>';
-      html += '<div class="shot-dists">';
-      html += '<div class="shot-dist">📏 <span>' + yds(s.dTee) + ' yds</span> tee</div>';
-      html += '<div class="shot-dist">⛳ <span>' + yds(s.dPin) + ' yds</span> pin</div>';
-      html += '</div>';
-      html += '<button class="del-btn" onclick="deleteShot(' + s.id + ')">✕</button>';
-      html += '</div>';
+      html += '<div class="shot-row">' +
+        '<div class="shot-badge">' + s.num + '</div>' +
+        '<div class="shot-dists">' +
+        '<div class="shot-dist">📏 <span>' + yds(s.dTee) + '</span> yds</div>' +
+        '<div class="shot-dist">⛳ <span>' + yds(s.dPin) + '</span> yds</div>' +
+        '</div>' +
+        '<button class="del-btn" onclick="deleteShot(' + s.id + ')">✕</button>' +
+        '</div>';
     });
-    html += '</div>';
+    shotPanel.innerHTML = html;
+    actionRow.style.display = 'flex';
+  } else {
+    hint.innerHTML = '<div class="hint-pill">Tap map to mark a shot</div>';
+    actionRow.style.display = 'flex';
   }
-
-  html += '<div class="action-row">';
-  html += '<button class="action-btn" onclick="newHole()">New Hole</button>';
-  html += '<button class="action-btn" onclick="clearAll()">Clear All</button>';
-  html += '</div>';
-
-  panel.innerHTML = html;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 function deleteShot(id) {
   var shot = shots.find(function(s) { return s.id === id; });
-  if (shot && shot._marker) shot._marker.remove();
+  if (shot) {
+    if (shot._marker) shot._marker.remove();
+    if (shot._label) shot._label.remove();
+  }
   shots = shots.filter(function(s) { return s.id !== id; });
   shots.forEach(function(s, i) {
     s.num = i + 1;
     if (s._marker) s._marker.getElement().textContent = s.num;
+    if (s._label) s._label.getElement().innerHTML = '📏 ' + yds(s.dTee) + ' · ⛳ ' + yds(s.dPin) + ' yds';
   });
-  saveHistory();
-  drawLines();
-  renderPanel();
+  save(); drawLines(); renderPanel();
 }
 
 function newHole() {
-  // Clear shots
-  shots.forEach(function(s) { if (s._marker) s._marker.remove(); });
+  shots.forEach(function(s) {
+    if (s._marker) s._marker.remove();
+    if (s._label) s._label.remove();
+  });
   shots = [];
-  shotMarkers = [];
-
-  // Clear markers
   if (teeMarker) { teeMarker.remove(); teeMarker = null; }
   if (targetMarker) { targetMarker.remove(); targetMarker = null; }
+  if (teeLabelMarker) { teeLabelMarker.remove(); teeLabelMarker = null; }
+  if (pinLabelMarker) { pinLabelMarker.remove(); pinLabelMarker = null; }
   teePos = null; targetPos = null;
+  removeLayer('lyr-tee-pin'); removeSource('src-tee-pin');
+  removeLayer('lyr-shots');   removeSource('src-shots');
+  localStorage.removeItem('gst2_tee');
+  localStorage.removeItem('gst2_pin');
+  localStorage.removeItem('gst2_shots');
 
-  // Clear lines
-  clearLines();
-
-  // Reset to Hole 1
+  // Reset to Rock Creek Hole 1
   teePos = [ROCK_CREEK.lng, ROCK_CREEK.lat];
   placeTeeMarker();
-  map.flyTo({ center: teePos, zoom: 18, duration: 800 });
-  saveHistory();
+  map.flyTo({ center: teePos, zoom: 18, duration: 600 });
+  save();
   setMode('target');
   renderPanel();
 }
 
 function clearAll() {
-  if (!confirm('Clear all shots and markers?')) return;
-  shots.forEach(function(s) { if (s._marker) s._marker.remove(); });
+  if (!confirm('Clear everything?')) return;
+  shots.forEach(function(s) {
+    if (s._marker) s._marker.remove();
+    if (s._label) s._label.remove();
+  });
   shots = [];
-  shotMarkers = [];
   if (teeMarker) { teeMarker.remove(); teeMarker = null; }
   if (targetMarker) { targetMarker.remove(); targetMarker = null; }
+  if (teeLabelMarker) { teeLabelMarker.remove(); teeLabelMarker = null; }
+  if (pinLabelMarker) { pinLabelMarker.remove(); pinLabelMarker = null; }
   teePos = null; targetPos = null;
-  clearLines();
-  localStorage.removeItem('gst_shots');
+  removeLayer('lyr-tee-pin'); removeSource('src-tee-pin');
+  removeLayer('lyr-shots');   removeSource('src-shots');
+  localStorage.removeItem('gst2_tee');
+  localStorage.removeItem('gst2_pin');
+  localStorage.removeItem('gst2_shots');
   setMode('tee');
   renderPanel();
 }
 
-function clearLines() {
-  if (!map) return;
-  ['line-tee-pin-layer', 'line-shots-layer'].forEach(function(id) { if (map.getLayer(id)) map.removeLayer(id); });
-  ['src-tee-pin', 'src-shots'].forEach(function(id) { if (map.getSource(id)) map.removeSource(id); });
-}
-
-// ── Map Controls ──────────────────────────────────────────────────────────────
-function resetNorth() {
-  if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 400 });
-}
+function resetNorth() { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 400 }); }
 
 function toggleSatellite() {
   if (!map) return;
   isSatellite = !isSatellite;
   map.setStyle(isSatellite
     ? 'mapbox://styles/mapbox/satellite-streets-v12'
-    : 'mapbox://styles/mapbox/outdoors-v12'
-  );
-  // Re-draw lines after style loads
+    : 'mapbox://styles/mapbox/outdoors-v12');
   map.once('styledata', function() {
     if (teePos && targetPos) drawLines();
   });
-}
-
-// ── Status ────────────────────────────────────────────────────────────────────
-function setStatus(msg, color) {
-  var el = document.getElementById('token-status');
-  el.textContent = msg;
-  el.style.color = color || 'var(--gold)';
 }
 
 // ── Math ──────────────────────────────────────────────────────────────────────
 function haversine(lat1, lng1, lat2, lng2) {
   var R = 6371000;
   var p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
-  var dp = (lat2 - lat1) * Math.PI / 180;
-  var dl = (lng2 - lng1) * Math.PI / 180;
-  var a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var dp = (lat2 - lat1) * Math.PI / 180, dl = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dp/2)*Math.sin(dp/2) + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 function yds(m) { return Math.round(m * 1.09361); }
 
-// ── Auto-load saved token ─────────────────────────────────────────────────────
+// ── Auto-load ─────────────────────────────────────────────────────────────────
 window.addEventListener('load', function() {
   var t = localStorage.getItem('gst_token');
-  if (t) {
-    document.getElementById('token-input').value = t;
-    // Auto-launch if token saved
-    initMap();
-  }
+  if (t) { document.getElementById('token-input').value = t; initMap(); }
 });
 </script>
 </body>
