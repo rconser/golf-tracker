@@ -305,14 +305,19 @@ window.initMap = function() {
       zoom: 18,
       center,
       mapTypeId: 'hybrid',
-      tilt: 0,
       disableDefaultUI: true,
       zoomControl: true,
-      rotateControl: true,
+      rotateControl: false,
       gestureHandling: 'greedy',
     });
     map.addListener('click', handleMapClick);
     loadHistory();
+    // Auto-set tee to Rock Creek CC Hole 1 tee box if no history loaded
+    if (!teePos) {
+      teePos = { lat: 45.555881, lng: -122.880994 };
+      placeTeeMarker();
+      setMode('target');
+    }
     renderAll();
     renderPanel();
   };
@@ -379,13 +384,13 @@ window.initMap = function() {
       },
       (err) => {
         console.warn('Geolocation failed:', err.message);
-        initMapAtLocation({ lat: 45.5631, lng: -122.8183 });
+        initMapAtLocation({ lat: 45.555881, lng: -122.880994 });
         document.getElementById('info-panel').innerHTML = '<div class="hint">⚠️ Location denied. Pan to your course.</div>';
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   } else {
-    initMapAtLocation({ lat: 45.5631, lng: -122.8183 });
+    initMapAtLocation({ lat: 45.555881, lng: -122.880994 });
   }
 };
 
