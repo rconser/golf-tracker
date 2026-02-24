@@ -1,419 +1,511 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Golf Tracker">
-<meta name="theme-color" content="#000">
-<title>⛳ Golf Tracker</title>
+<meta name="theme-color" content="#000000">
+<title>Golf Tracker</title>
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a1a10'/><text y='72' x='50' text-anchor='middle' font-size='60'>⛳</text></svg>">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@600;700&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --ink:        #0a1a10;
-    --gd:         #0f2318;
-    --gm:         #1e4028;
-    --gl:         #4a8c5c;
-    --cream:      #f0ebe0;
-    --sand:       #d4c9a8;
-    --gold:       #c9a84c;
-    --goldl:      #e8c96a;
-    --red:        #cc3333;
-    --glass:      rgba(6,16,10,0.80);
-    --gborder:    rgba(74,140,92,0.28);
-  }
-  html, body { height:100%; width:100%; overflow:hidden; background:#000; position:fixed; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@600;700&display=swap');
 
-#map { position:fixed; inset:0; width:100%; height:100%; z-index:0; margin-bottom: -1px; }
-.mapboxgl-canvas { outline:none; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:    #080f0a;
+  --gd:     #0c1e12;
+  --gm:     #163020;
+  --gl:     #2d6040;
+  --glx:    #4a8c5c;
+  --cream:  #f0ebe0;
+  --sand:   #c8bea0;
+  --gold:   #c9a84c;
+  --goldl:  #e8c96a;
+  --red:    #cc3333;
+  --blue:   #4285F4;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --glass:  rgba(5, 12, 8, 0.84);
+  --gb:     rgba(60, 120, 80, 0.25);
+}
+
+html {
+  height: 100%;
+  /* fill including notch/island */
+  background: #000;
+}
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  font-family: 'DM Mono', monospace;
+  color: var(--cream);
+  /* iOS PWA full bleed */
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+
+/* ── Map fills everything ── */
+#map {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+}
+.mapboxgl-canvas { outline: none; }
 .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right,
-.mapboxgl-ctrl-top-left, .mapboxgl-ctrl-top-right { display:none !important; }
+.mapboxgl-ctrl-top-left, .mapboxgl-ctrl-top-right { display: none !important; }
 
 /* ── Token screen ── */
 #token-screen {
-position:fixed; inset:0; z-index:200;
-background:var(–ink);
-display:flex; flex-direction:column; align-items:center; justify-content:center;
-gap:14px; padding:32px 24px;
+  position: fixed; inset: 0; z-index: 300;
+  background: var(--ink);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 40px 24px;
+  padding-top: max(40px, var(--safe-t));
+  padding-bottom: max(40px, var(--safe-b));
 }
-.t-title { font-family:‘Cormorant Garamond’,serif; font-size:2rem; color:var(–gold); text-align:center; }
-.t-sub { font-size:0.68rem; color:var(–sand); text-align:center; line-height:1.8; max-width:300px; }
+.ts-title { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: var(--gold); text-align: center; line-height: 1.1; }
+.ts-sub { font-size: 0.68rem; color: var(--sand); text-align: center; line-height: 1.8; max-width: 300px; }
 #token-input {
-width:100%; max-width:360px; padding:13px 14px;
-background:var(–gd); border:1px solid var(–gold);
-color:var(–cream); font-family:‘DM Mono’,monospace; font-size:0.75rem;
-border-radius:8px; outline:none;
+  width: 100%; max-width: 360px; padding: 13px 14px;
+  background: var(--gd); border: 1px solid var(--gold);
+  color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.75rem;
+  border-radius: 10px; outline: none;
 }
-#token-input::placeholder { color:#2d5c3a; }
+#token-input::placeholder { color: var(--gl); }
 #launch-btn {
-width:100%; max-width:360px; padding:14px;
-background:var(–gold); color:var(–ink); border:none;
-font-family:‘DM Mono’,monospace; font-size:0.75rem; font-weight:500;
-letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; border-radius:8px;
+  width: 100%; max-width: 360px; padding: 14px;
+  background: var(--gold); color: var(--ink); border: none;
+  font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border-radius: 10px;
 }
-#t-status { font-size:0.68rem; color:var(–gold); text-align:center; min-height:1.2em; }
-.t-help { font-size:0.58rem; color:#555; max-width:320px; line-height:1.8;
-border-top:1px solid var(–gm); padding-top:12px; }
+#t-status { font-size: 0.68rem; color: var(--gold); text-align: center; min-height: 1.2em; }
+.ts-help { font-size: 0.6rem; color: #555; max-width: 320px; line-height: 1.8;
+  border-top: 1px solid var(--gm); padding-top: 12px; }
 
-/* ── Glass mixin ── */
+/* ── Glass panel base ── */
 .glass {
-background:var(–glass);
-border:1px solid var(–gborder);
-backdrop-filter:blur(12px);
--webkit-backdrop-filter:blur(12px);
+  background: var(--glass);
+  border: 1px solid var(--gb);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-/* ── Mode bar — top ── */
-#mode-bar {
-position:fixed; top:env(safe-area-inset-top,0px); left:0; right:0;
-z-index:30; display:none; padding:10px 10px 0;
+/* ── Top bar ── */
+#top-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  padding-top: var(--safe-t);
+  z-index: 50;
+  pointer-events: none;
 }
-#mode-bar.on { display:block; }
-.mode-row { display:flex; gap:5px; }
-.mode-btn {
-flex:1; padding:9px 3px 8px;
-background:var(–glass); border:1px solid var(–gborder);
-color:var(–sand); font-family:‘DM Mono’,monospace;
-font-size:0.55rem; letter-spacing:0.06em; text-transform:uppercase;
-border-radius:8px; cursor:pointer;
-backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-line-height:1.4; text-align:center; transition:all 0.12s;
+#top-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+  pointer-events: all;
 }
-.mode-btn .ico { display:block; font-size:1rem; margin-bottom:1px; }
-.mode-btn.active { background:var(–gold); border-color:var(–goldl); color:var(–ink); font-weight:500; }
-.mode-btn.green-active { background:#1a6e3a; border-color:#3aad6a; color:#fff; font-weight:500; }
-
-/* ── Corner controls ── */
-#corner-ctrl {
-position:fixed; z-index:30;
-top:calc(env(safe-area-inset-top,0px) + 86px); right:10px;
-display:none; flex-direction:column; gap:5px;
-}
-#corner-ctrl.on { display:flex; }
-.ctrl-btn {
-width:36px; height:36px;
-background:var(–glass); border:1px solid var(–gborder);
-color:var(–cream); font-size:1rem; border-radius:8px; cursor:pointer;
-backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-display:flex; align-items:center; justify-content:center;
+.app-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--gold); }
+.top-controls { display: flex; gap: 6px; align-items: center; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--glass); border: 1px solid var(--gb);
+  color: var(--cream); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 
-/* ── Bottom-left distance readout ── */
-#dist-readout {
-position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 170px); left:10px;
-z-index:30; display:none; flex-direction:column; gap:4px;
+/* ── Mode toggle switch ── */
+#mode-toggle-wrap {
+  position: fixed;
+  bottom: calc(var(--safe-b) + 14px);
+  right: 14px;
+  z-index: 60;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
 }
-#dist-readout.on { display:flex; }
-.dist-card {
-display:flex; align-items:center; gap:8px;
-padding:6px 10px; border-radius:8px; min-width:130px;
+.toggle-label { font-size: 0.5rem; color: var(--sand); letter-spacing: 0.1em; text-transform: uppercase; text-align: right; }
+.toggle-switch {
+  width: 64px; height: 30px; border-radius: 15px;
+  background: var(--gm); border: 1px solid var(--gb);
+  position: relative; cursor: pointer;
+  transition: background 0.2s;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
-.dist-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
-.dist-label { font-size:0.52rem; color:var(–sand); text-transform:uppercase; letter-spacing:0.1em; }
-.dist-yds { font-family:‘Cormorant Garamond’,serif; font-size:1.5rem; color:var(–cream); font-weight:700; line-height:1; }
-.dist-unit { font-size:0.48rem; color:var(–sand); }
+.toggle-switch.on-course { background: rgba(74,140,92,0.4); }
+.toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--sand); transition: left 0.2s;
+}
+.toggle-switch.on-course .toggle-knob { left: 37px; background: var(--goldl); }
+.toggle-mode-txt {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 0.42rem; font-weight: 500; letter-spacing: 0.04em;
+  text-transform: uppercase; pointer-events: none;
+}
+.toggle-mode-txt.left  { left: 6px;  color: var(--goldl); }
+.toggle-mode-txt.right { right: 5px; color: var(--sand); }
+.toggle-switch.on-course .toggle-mode-txt.left  { color: var(--sand); }
+.toggle-switch.on-course .toggle-mode-txt.right { color: var(--goldl); }
 
-/* ── Bottom panel ── */
-#bottom-panel {
-position:fixed; bottom:0; left:0; right:0;
-z-index:30; display:none; flex-direction:column;
-padding:0 10px calc(env(safe-area-inset-bottom,0px) + 14px);
-gap:6px;
+/* ── Primary action button ── */
+#action-btn {
+  position: fixed;
+  bottom: calc(var(--safe-b) + 14px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 60;
+  padding: 14px 28px;
+  background: var(--gold); color: var(--ink); border: none;
+  font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; border-radius: 30px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  display: none;
 }
-#bottom-panel.on { display:flex; }
-#hint-pill {
-align-self:center;
-padding:7px 16px; border-radius:20px;
-font-size:0.62rem; color:var(–sand); text-align:center;
-pointer-events:none;
-}
-.stats-row { display:flex; gap:6px; }
-.stat-card { flex:1; padding:8px 10px; border-radius:10px; text-align:center; }
-.s-label { font-size:0.46rem; color:var(–gl); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:2px; }
-.s-val { font-family:‘Cormorant Garamond’,serif; font-size:1.5rem; color:var(–gold); font-weight:700; line-height:1; }
-.s-unit { font-size:0.46rem; color:var(–sand); }
-#shot-list { border-radius:10px; overflow:hidden; max-height:130px; overflow-y:auto; }
-#shot-list::-webkit-scrollbar { width:0; }
-.shot-row { display:flex; align-items:center; gap:8px; padding:7px 12px;
-border-bottom:1px solid rgba(74,140,92,0.12); font-size:0.62rem; }
-.shot-row:last-child { border-bottom:none; }
-.s-badge { width:20px; height:20px; border-radius:50%; background:var(–gold); color:var(–ink);
-display:flex; align-items:center; justify-content:center; font-size:0.58rem; font-weight:500; flex-shrink:0; }
-.s-dists { flex:1; display:flex; gap:10px; }
-.s-d { color:var(–sand); }
-.s-d span { color:var(–cream); font-weight:500; }
-.del-btn { background:none; border:none; color:#2d5c3a; cursor:pointer; font-size:0.85rem; padding:2px 4px; }
-.act-row { display:flex; gap:6px; }
-.act-btn { flex:1; padding:10px; border-radius:8px;
-background:var(–glass); border:1px solid var(–gborder);
-color:var(–cream); font-family:‘DM Mono’,monospace;
-font-size:0.58rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;
-backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+#action-btn.gps  { background: var(--blue); color: #fff; }
+#action-btn.confirm { background: #2d8a50; color: #fff; }
+#action-btn.club { background: var(--gm); color: var(--goldl); border: 1px solid var(--glx); }
+#action-btn.result { background: var(--red); color: #fff; }
 
-/* ── Draggable target crosshair ── */
-#crosshair-container {
-position:fixed; inset:0; z-index:25;
-pointer-events:none; display:none;
+/* ── Distance readout — bottom left ── */
+#dist-box {
+  position: fixed;
+  bottom: calc(var(--safe-b) + 64px);
+  left: 10px; z-index: 55;
+  display: none; flex-direction: column; gap: 3px;
 }
-#crosshair-container.on { display:block; }
-#crosshair {
-position:absolute;
-width:60px; height:60px;
-transform:translate(-50%,-50%);
-pointer-events:none;
+.db-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 10px; border-radius: 8px; min-width: 120px;
 }
-#crosshair svg { width:100%; height:100%; }
-#set-target-btn {
-position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
-left:50%; transform:translateX(-50%);
-z-index:35; display:none;
-padding:13px 32px;
-background:var(–gold); color:var(–ink); border:none;
-font-family:‘DM Mono’,monospace; font-size:0.72rem; font-weight:500;
-letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; border-radius:30px;
-box-shadow:0 4px 20px rgba(0,0,0,0.5);
-pointer-events:all;
+.db-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.db-label { font-size: 0.46rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.1em; }
+.db-val { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--cream); font-weight: 700; line-height: 1; }
+.db-unit { font-size: 0.44rem; color: var(--sand); }
+
+/* ── Shot summary card ── */
+#shot-summary {
+  position: fixed;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 100; width: calc(100% - 40px); max-width: 340px;
+  padding: 20px; border-radius: 14px;
+  display: none; flex-direction: column; gap: 12px;
 }
+.ss-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: var(--gold); text-align: center; }
+.ss-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ss-cell { background: var(--gm); border-radius: 8px; padding: 10px; text-align: center; }
+.ss-cell-label { font-size: 0.48rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px; }
+.ss-cell-val { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--cream); font-weight: 700; line-height: 1; }
+.ss-cell-unit { font-size: 0.46rem; color: var(--sand); }
+.ss-miss { text-align: center; font-size: 0.65rem; color: var(--sand); padding: 4px; }
+.ss-miss span { color: var(--cream); font-weight: 500; }
+.ss-btns { display: flex; gap: 8px; }
+.ss-btn {
+  flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.ss-btn.next { background: var(--gold); color: var(--ink); }
+.ss-btn.discard { background: var(--gm); color: var(--sand); border: 1px solid var(--gb); }
+
+/* ── Club picker ── */
+#club-picker {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 16px calc(var(--safe-b) + 16px);
+  display: none; flex-direction: column; gap: 12px;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+#club-picker.open { display: flex; transform: translateY(0); }
+.cp-title { font-size: 0.6rem; color: var(--sand); text-align: center; letter-spacing: 0.15em; text-transform: uppercase; }
+.cp-scroll {
+  display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px;
+  scrollbar-width: none;
+}
+.cp-scroll::-webkit-scrollbar { display: none; }
+.club-chip {
+  flex-shrink: 0; padding: 9px 14px;
+  background: var(--gm); border: 1px solid var(--gb);
+  color: var(--sand); font-family: 'DM Mono', monospace;
+  font-size: 0.65rem; border-radius: 20px; cursor: pointer;
+  white-space: nowrap; transition: all 0.1s;
+}
+.club-chip.selected { background: var(--gold); border-color: var(--goldl); color: var(--ink); font-weight: 500; }
+.cp-confirm {
+  padding: 13px; background: var(--gold); color: var(--ink); border: none;
+  font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border-radius: 10px;
+}
+
+/* ── Hint bar ── */
+#hint-bar {
+  position: fixed;
+  top: calc(var(--safe-t) + 56px);
+  left: 10px; right: 10px;
+  z-index: 50; text-align: center;
+  pointer-events: none; display: none;
+}
+#hint-text {
+  display: inline-block;
+  padding: 7px 16px; border-radius: 20px;
+  font-size: 0.62rem; color: var(--sand); line-height: 1.4;
+}
+
+/* ── Stats screen ── */
+#stats-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--ink); overflow-y: auto;
+  display: none; flex-direction: column;
+  padding: max(20px, var(--safe-t)) 16px calc(20px + var(--safe-b));
+}
+#stats-screen.open { display: flex; }
+.stats-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--gm);
+}
+.stats-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--gold); }
+.close-btn {
+  padding: 8px 16px; border-radius: 8px;
+  background: var(--gm); border: 1px solid var(--gb);
+  color: var(--cream); font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; cursor: pointer;
+}
+.club-stat-card {
+  background: var(--gd); border: 1px solid var(--gm);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+}
+.csc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.csc-club { font-size: 0.85rem; color: var(--gold); font-weight: 500; }
+.csc-shots { font-size: 0.55rem; color: var(--sand); }
+.csc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.csc-cell { background: var(--gm); border-radius: 6px; padding: 7px; text-align: center; }
+.csc-label { font-size: 0.44rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+.csc-val { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--cream); font-weight: 700; line-height: 1; }
+.csc-unit { font-size: 0.42rem; color: var(--sand); }
+.no-data { text-align: center; color: var(--sand); font-size: 0.68rem; padding: 40px 0; }
 
 /* ── Map markers ── */
-.tee-dot {
-width:26px; height:26px; border-radius:50%;
-background:#c9a84c; border:2px solid #fff;
-display:flex; align-items:center; justify-content:center;
-font-size:0.5rem; font-weight:700; color:#0a1a10;
-font-family:‘DM Mono’,monospace;
-box-shadow:0 2px 8px rgba(0,0,0,0.6);
+.ball-marker {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--ink);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.7);
 }
-.pin-flag { font-size:1.8rem; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.8)); line-height:1; }
-
-.yd-dot {
-border-radius:50%;
-border:2px solid rgba(255,255,255,0.6);
-box-shadow:0 1px 6px rgba(0,0,0,0.7);
-pointer-events:none;
+.target-marker {
+  width: 36px; height: 36px;
+  position: relative; cursor: grab;
 }
-.yd-dot.y50  { width:14px; height:14px; background:#e8c96a; }
-.yd-dot.y100 { width:16px; height:16px; background:#cc3333; }
-.yd-dot.y150 { width:16px; height:16px; background:#ffffff; }
-
+.target-marker svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+.result-marker {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--red); border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+.yd-dot { border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 1px 5px rgba(0,0,0,0.6); }
+.yd-dot.y50  { width: 13px; height: 13px; background: #e8c96a; }
+.yd-dot.y100 { width: 15px; height: 15px; background: #cc3333; }
+.yd-dot.y150 { width: 15px; height: 15px; background: #ffffff; }
 .yd-lbl {
-background:rgba(6,16,10,0.82); border:1px solid rgba(74,140,92,0.4);
-color:var(–gold); font-family:‘DM Mono’,monospace;
-font-size:0.58rem; padding:2px 7px; border-radius:10px;
-pointer-events:none; white-space:nowrap;
-box-shadow:0 1px 5px rgba(0,0,0,0.5);
+  background: rgba(5,12,8,0.85); border: 1px solid rgba(74,140,92,0.35);
+  font-family: 'DM Mono', monospace; font-size: 0.55rem;
+  padding: 2px 6px; border-radius: 8px; pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5); white-space: nowrap;
 }
-.yd-lbl.white { border-color:rgba(255,255,255,0.3); color:#fff; }
-.yd-lbl.yellow { border-color:rgba(232,201,106,0.5); color:#e8c96a; }
-.yd-lbl.red { border-color:rgba(204,51,51,0.5); color:#ff6b6b; }
-
-.shot-marker {
-width:24px; height:24px; border-radius:50%;
-background:rgba(14,40,22,0.92); border:2px solid #4a8c5c;
-display:flex; align-items:center; justify-content:center;
-font-size:0.62rem; font-weight:500; color:#f0ebe0;
-font-family:‘DM Mono’,monospace;
-box-shadow:0 1px 6px rgba(0,0,0,0.6); cursor:pointer;
+.yd-lbl.w { color: #fff; }
+.yd-lbl.y { color: #e8c96a; }
+.yd-lbl.r { color: #ff6b6b; }
+.pin-el { font-size: 1.8rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8)); line-height: 1; }
+.blue-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--blue); border: 3px solid #fff;
+  box-shadow: 0 0 0 3px rgba(66,133,244,0.35);
 }
-.shot-lbl {
-background:rgba(6,16,10,0.82); border:1px solid rgba(74,140,92,0.35);
-color:var(–cream); font-family:‘DM Mono’,monospace;
-font-size:0.56rem; padding:3px 8px; border-radius:10px;
-pointer-events:none; white-space:nowrap;
-}
-
-.front-dot { width:14px; height:14px; border-radius:50%;
-background:#3aad6a; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.6); }
-.back-dot  { width:14px; height:14px; border-radius:50%;
-background:#1a6e3a; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.6); }
-.mid-dot   { width:16px; height:16px; border-radius:50%;
-background:#c9a84c; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.6); }
-
-.blue-dot { width:16px; height:16px; border-radius:50%;
-background:#4285F4; border:3px solid #fff;
-box-shadow:0 0 0 3px rgba(66,133,244,0.35); pointer-events:none; }
-
-/* target preview marker */
-.target-preview {
-background:rgba(6,16,10,0.85); border:1px solid var(–gold);
-color:var(–gold); font-family:‘DM Mono’,monospace;
-font-size:0.6rem; padding:3px 9px; border-radius:10px;
-white-space:nowrap; pointer-events:none;
-}
-
-/* iPhone PWA bottom fill */
-body::after {
-content: ‘’;
-position: fixed;
-bottom: 0; left: 0; right: 0;
-height: env(safe-area-inset-bottom, 0px);
-background: #000;
-z-index: 1;
+.dist-preview {
+  background: rgba(5,12,8,0.88); border: 1px solid var(--gold);
+  color: var(--goldl); font-family: 'DM Mono', monospace;
+  font-size: 0.6rem; padding: 4px 10px; border-radius: 10px;
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
 </style>
-
 </head>
 <body>
 
 <div id="map"></div>
 
 <!-- Token screen -->
-
 <div id="token-screen">
-  <div class="t-title">⛳<br>Golf Tracker</div>
-  <div class="t-sub">Enter your Mapbox token to launch.<br>Free at <b style="color:var(--gold)">mapbox.com</b></div>
+  <div class="ts-title">⛳<br>Golf Tracker</div>
+  <div class="ts-sub">Enter your Mapbox token to launch.<br>Free at <b style="color:var(--gold)">mapbox.com</b></div>
   <input id="token-input" type="text" placeholder="pk.eyJ1..." autocomplete="off" spellcheck="false"/>
   <button id="launch-btn" onclick="launch()">Launch</button>
   <div id="t-status"></div>
-  <div class="t-help">
+  <div class="ts-help">
     1. mapbox.com → sign up (free)<br>
     2. Dashboard → copy Default public token (pk…)<br>
-    3. Paste above — saved locally, never needed again
+    3. Paste above — saved forever on this device
   </div>
 </div>
 
-<!-- Mode bar -->
-
-<div id="mode-bar">
-  <div class="mode-row">
-    <button class="mode-btn active" id="btn-tee"    onclick="setMode('tee')"><span class="ico">📍</span>Tee</button>
-    <button class="mode-btn"        id="btn-green"  onclick="setMode('green')"><span class="ico">🟢</span>Green</button>
-    <button class="mode-btn"        id="btn-target" onclick="setMode('target')"><span class="ico">⛳</span>Pin</button>
-    <button class="mode-btn"        id="btn-shot"   onclick="setMode('shot')"><span class="ico">🏌️</span>Shot</button>
+<!-- Top bar -->
+<div id="top-bar" style="display:none">
+  <div id="top-inner">
+    <div class="app-title">⛳ Golf Tracker</div>
+    <div class="top-controls">
+      <button class="icon-btn" onclick="toggleSat()">🛰</button>
+      <button class="icon-btn" onclick="resetNorth()">⬆</button>
+      <button class="icon-btn" onclick="openStats()">📊</button>
+    </div>
   </div>
 </div>
 
-<!-- Corner controls -->
-
-<div id="corner-ctrl">
-  <button class="ctrl-btn" onclick="toggleSat()" title="Satellite">🛰</button>
-  <button class="ctrl-btn" onclick="resetNorth()" title="North">⬆</button>
-</div>
+<!-- Hint bar -->
+<div id="hint-bar"><div id="hint-text" class="glass"></div></div>
 
 <!-- Bottom-left distance readout -->
-
-<div id="dist-readout">
-  <div class="dist-card glass" id="dr-front">
-    <div class="dist-dot" style="background:#3aad6a"></div>
+<div id="dist-box">
+  <div class="db-row glass">
+    <div class="db-dot" style="background:#3aad6a"></div>
     <div>
-      <div class="dist-label">Front</div>
-      <div><span class="dist-yds" id="yds-front">—</span> <span class="dist-unit">yds</span></div>
+      <div class="db-label">Front</div>
+      <div><span class="db-val" id="db-front">—</span> <span class="db-unit">yds</span></div>
     </div>
   </div>
-  <div class="dist-card glass" id="dr-mid">
-    <div class="dist-dot" style="background:#c9a84c"></div>
+  <div class="db-row glass">
+    <div class="db-dot" style="background:#c9a84c"></div>
     <div>
-      <div class="dist-label">Middle</div>
-      <div><span class="dist-yds" id="yds-mid">—</span> <span class="dist-unit">yds</span></div>
+      <div class="db-label">Middle</div>
+      <div><span class="db-val" id="db-mid">—</span> <span class="db-unit">yds</span></div>
     </div>
   </div>
-  <div class="dist-card glass" id="dr-back">
-    <div class="dist-dot" style="background:#1a6e3a"></div>
+  <div class="db-row glass">
+    <div class="db-dot" style="background:#1a6e3a"></div>
     <div>
-      <div class="dist-label">Back</div>
-      <div><span class="dist-yds" id="yds-back">—</span> <span class="dist-unit">yds</span></div>
+      <div class="db-label">Back</div>
+      <div><span class="db-val" id="db-back">—</span> <span class="db-unit">yds</span></div>
     </div>
   </div>
 </div>
 
-<!-- Bottom panel -->
+<!-- Primary action button -->
+<button id="action-btn" onclick="handleAction()"></button>
 
-<div id="bottom-panel">
-  <div id="hint-pill" class="glass"></div>
-  <div class="stats-row" id="stats-row" style="display:none">
-    <div class="stat-card glass">
-      <div class="s-label">Tee → Pin</div>
-      <div class="s-val" id="sv-pin">—</div>
-      <div class="s-unit">yards</div>
-    </div>
-    <div class="stat-card glass">
-      <div class="s-label">Shots</div>
-      <div class="s-val" id="sv-shots">0</div>
-      <div class="s-unit">logged</div>
-    </div>
-  </div>
-  <div id="shot-list" class="glass" style="display:none"></div>
-  <div class="act-row" id="act-row" style="display:none">
-    <button class="act-btn" onclick="newHole()">New Hole</button>
-    <button class="act-btn" onclick="clearAll()">Clear All</button>
+<!-- Mode toggle -->
+<div id="mode-toggle-wrap" style="display:none">
+  <div class="toggle-label" id="mode-label">Manual</div>
+  <div class="toggle-switch" id="mode-toggle" onclick="toggleMode()">
+    <div class="toggle-knob"></div>
+    <span class="toggle-mode-txt left">MAN</span>
+    <span class="toggle-mode-txt right">GPS</span>
   </div>
 </div>
 
-<!-- Draggable crosshair overlay -->
+<!-- Club picker -->
+<div id="club-picker" class="glass">
+  <div class="cp-title">Select Club</div>
+  <div class="cp-scroll" id="club-scroll"></div>
+  <button class="cp-confirm" onclick="confirmClub()">Confirm Club</button>
+</div>
 
-<div id="crosshair-container">
-  <div id="crosshair">
-    <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="30" cy="30" r="18" stroke="#e8c96a" stroke-width="1.5" stroke-dasharray="4 3"/>
-      <circle cx="30" cy="30" r="3"  fill="#e8c96a"/>
-      <line x1="30" y1="4"  x2="30" y2="20" stroke="#e8c96a" stroke-width="1.5"/>
-      <line x1="30" y1="40" x2="30" y2="56" stroke="#e8c96a" stroke-width="1.5"/>
-      <line x1="4"  y1="30" x2="20" y2="30" stroke="#e8c96a" stroke-width="1.5"/>
-      <line x1="40" y1="30" x2="56" y2="30" stroke="#e8c96a" stroke-width="1.5"/>
-    </svg>
+<!-- Shot summary -->
+<div id="shot-summary" class="glass">
+  <div class="ss-title">Shot Logged ✓</div>
+  <div class="ss-grid" id="ss-grid"></div>
+  <div class="ss-miss" id="ss-miss"></div>
+  <div class="ss-btns">
+    <button class="ss-btn discard" onclick="discardShot()">Undo</button>
+    <button class="ss-btn next" onclick="nextShot()">Next Shot →</button>
   </div>
 </div>
 
-<!-- Set target confirm button -->
-
-<button id="set-target-btn" onclick="confirmTarget()">Set Target</button>
+<!-- Stats screen -->
+<div id="stats-screen">
+  <div class="stats-header">
+    <div class="stats-title">📊 Club Stats</div>
+    <button class="close-btn" onclick="closeStats()">Close</button>
+  </div>
+  <div id="stats-content"></div>
+</div>
 
 <script>
-// ── Rock Creek CC Hole 1 Tee ──────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════
 var ROCK_CREEK = { lng: -122.880994, lat: 45.555881 };
 
-// ── State ─────────────────────────────────────────────────────────────────────
+var CLUBS = [
+  'Driver','3W','5W','4H','5H',
+  '4i','5i','6i','7i','8i','9i',
+  'PW','GW','SW','LW'
+];
+
+// Shot flow steps
+var STEP = {
+  BALL:   'ball',    // waiting to set ball position
+  TARGET: 'target',  // ball set, waiting to set target
+  CLUB:   'club',    // target set, picking club
+  RESULT: 'result',  // club set, waiting for result
+};
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
 var map;
-var mode = 'tee';
+var isOnCourse = false;  // false = manual, true = on-course
 var isSat = true;
-var teePos = null, pinPos = null;
-var frontPos = null, backPos = null, midPos = null;
-var greenStep = 0; // 0=place front, 1=place back
-var shots = [];
+var step = STEP.BALL;
+
+// Current shot data
+var ballPos = null;      // [lng, lat]
+var targetPos = null;    // [lng, lat]
+var resultPos = null;    // [lng, lat]
+var selectedClub = null;
+var currentGPS = null;   // live GPS position
+
+// Green positions (persistent per hole setup)
+var frontPos = null, midPos = null, backPos = null;
+var pinPos = null;
 
 // Markers
-var teeMarker = null, pinMarker = null;
-var frontMarker = null, backMarker = null, midMarker = null;
-var frontLbl = null, backLbl = null, midLbl = null;
-var yd50m = null, yd100m = null, yd150m = null;
-var yd50l = null, yd100l = null, yd150l = null;
+var ballMarker = null;
+var targetMarker = null, targetPreviewMarker = null;
+var resultMarker = null;
+var pinMarker = null;
 var blueDotMarker = null;
-var crosshairLngLat = null;
-var crosshairPreviewMarker = null;
-var pendingShotPos = null;
+var ydMarkers = [];
+var isDraggingTarget = false;
+var lastPendingShot = null;
 
-// ── Storage ───────────────────────────────────────────────────────────────────
-function persist() {
-  try {
-    var d = {
-      shots: shots.map(function(s){ return {id:s.id,lng:s.lng,lat:s.lat,num:s.num,dTee:s.dTee,dPin:s.dPin}; }),
-      tee: teePos, pin: pinPos, front: frontPos, back: backPos, mid: midPos
-    };
-    localStorage.setItem('gst3', JSON.stringify(d));
-  } catch(e) {}
+// ══════════════════════════════════════════════════════════════
+// DATABASE (localStorage)
+// ══════════════════════════════════════════════════════════════
+function db_load() {
+  try { return JSON.parse(localStorage.getItem('gtdb') || '[]'); } catch(e) { return []; }
+}
+function db_save(shots) {
+  try { localStorage.setItem('gtdb', JSON.stringify(shots)); } catch(e) {}
+}
+function db_addShot(shot) {
+  var shots = db_load();
+  shots.push(shot);
+  db_save(shots);
 }
 
-function restore() {
-  try {
-    var raw = localStorage.getItem('gst3');
-    if (!raw) return;
-    var d = JSON.parse(raw);
-    shots = d.shots || [];
-    teePos = d.tee || null;
-    pinPos = d.pin || null;
-    frontPos = d.front || null;
-    backPos = d.back || null;
-    midPos = d.mid || null;
-  } catch(e) {}
-}
-
-// ── Launch ────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// LAUNCH
+// ══════════════════════════════════════════════════════════════
 function launch() {
   var token = document.getElementById('token-input').value.trim();
   if (!token) { alert('Paste your Mapbox token first'); return; }
@@ -434,50 +526,44 @@ function launch() {
   });
 
   map.on('error', function(e) {
-    document.getElementById('t-status').textContent = '❌ Map error — check your token';
+    document.getElementById('t-status').textContent = '❌ Map error — check token';
     console.error(e);
   });
 
   map.on('load', function() {
     document.getElementById('token-screen').style.display = 'none';
-    document.getElementById('mode-bar').classList.add('on');
-    document.getElementById('corner-ctrl').classList.add('on');
-    document.getElementById('bottom-panel').classList.add('on');
+    document.getElementById('top-bar').style.display = 'block';
+    document.getElementById('mode-toggle-wrap').style.display = 'flex';
+    document.getElementById('hint-bar').style.display = 'block';
+    document.getElementById('dist-box').style.display = 'flex';
+    document.getElementById('action-btn').style.display = 'block';
 
-    map.on('click', handleClick);
-    map.on('touchstart', handleTouchForCrosshair);
-    map.on('touchmove', handleTouchMoveForCrosshair);
-
-    restore();
-
-    if (!teePos && shots.length === 0) {
-      teePos = [ROCK_CREEK.lng, ROCK_CREEK.lat];
-    }
-    if (teePos) placeTeeMarker();
-    if (pinPos) { placePinMarker(); placeYardageDots(); }
-    if (frontPos && backPos) { placeFrontBackMarkers(); }
-    shots.forEach(function(s){ placeShotMarker(s); });
-    if (teePos && pinPos) drawLines();
-    if (teePos && (frontPos || pinPos)) updateDistReadout(teePos);
-
-    document.getElementById('dist-readout').classList.add('on');
-    setMode('target');
-    renderPanel();
+    buildClubPicker();
     startGPS();
+    goToStep(STEP.BALL);
   });
+
+  map.on('click', handleMapClick);
+
+  // Touch drag for target marker
+  map.on('touchstart', onTouchStart);
+  map.on('touchmove',  onTouchMove);
+  map.on('touchend',   onTouchEnd);
 }
 
-// ── GPS ───────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// GPS
+// ══════════════════════════════════════════════════════════════
 function startGPS() {
   if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(function(p) {
-    placeBlueDot(p.coords.longitude, p.coords.latitude);
-    navigator.geolocation.watchPosition(
-      function(p){ placeBlueDot(p.coords.longitude, p.coords.latitude); },
-      null,
-      { enableHighAccuracy:true, maximumAge:0, timeout:10000 }
-    );
-  }, null, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
+  navigator.geolocation.watchPosition(
+    function(p) {
+      currentGPS = [p.coords.longitude, p.coords.latitude];
+      placeBlueDot(currentGPS[0], currentGPS[1]);
+    },
+    null,
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+  );
 }
 
 function placeBlueDot(lng, lat) {
@@ -485,433 +571,510 @@ function placeBlueDot(lng, lat) {
   if (!blueDotMarker) {
     var el = document.createElement('div');
     el.className = 'blue-dot';
-    blueDotMarker = new mapboxgl.Marker({ element:el, anchor:'center' })
-      .setLngLat([lng,lat]).addTo(map);
+    blueDotMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat]).addTo(map);
   } else {
-    blueDotMarker.setLngLat([lng,lat]);
+    blueDotMarker.setLngLat([lng, lat]);
   }
 }
 
-// ── Mode ──────────────────────────────────────────────────────────────────────
-function setMode(m) {
-  mode = m;
-  document.querySelectorAll('.mode-btn').forEach(function(b){
-    b.classList.remove('active','green-active');
-  });
-  var btn = document.getElementById('btn-' + m);
-  if (btn) btn.classList.add(m === 'green' ? 'green-active' : 'active');
-  map.getCanvas().style.cursor = (m === 'shot') ? 'default' : 'crosshair';
-
-  if (m !== 'shot') {
-    hideCrosshair();
+// ══════════════════════════════════════════════════════════════
+// MODE TOGGLE
+// ══════════════════════════════════════════════════════════════
+function toggleMode() {
+  isOnCourse = !isOnCourse;
+  var toggle = document.getElementById('mode-toggle');
+  var label  = document.getElementById('mode-label');
+  if (isOnCourse) {
+    toggle.classList.add('on-course');
+    label.textContent = 'On Course';
+  } else {
+    toggle.classList.remove('on-course');
+    label.textContent = 'Manual';
   }
-
-  if (m === 'green') {
-    greenStep = 0;
-    setHint('Tap <b style="color:#3aad6a">front edge</b> of green');
-  } else if (m === 'tee') {
-    setHint('Tap to place the <b style="color:var(--gold)">tee</b>');
-  } else if (m === 'target') {
-    if (!pinPos) setHint('Tap to place the <b style="color:#e8c96a">pin</b>');
-    else setHint('Tap to move the <b style="color:#e8c96a">pin</b>');
-  } else if (m === 'shot') {
-    setHint('Tap anywhere — drag crosshair, then <b>Set Target</b>');
-  }
+  goToStep(STEP.BALL);
 }
 
-// ── Click Handler ─────────────────────────────────────────────────────────────
-function handleClick(e) {
-  var lng = e.lngLat.lng, lat = e.lngLat.lat;
+// ══════════════════════════════════════════════════════════════
+// STEP MACHINE
+// ══════════════════════════════════════════════════════════════
+function goToStep(s) {
+  step = s;
+  var btn = document.getElementById('action-btn');
+  btn.className = '';
 
-  if (mode === 'tee') {
-    teePos = [lng, lat];
-    placeTeeMarker();
-    if (pinPos) { placeYardageDots(); updateDistReadout(teePos); drawLines(); }
-    persist();
-    setMode('target');
-
-  } else if (mode === 'target') {
-    pinPos = [lng, lat];
-    placePinMarker();
-    placeYardageDots();
-    if (frontPos) updateDistReadout(teePos);
-    else updateDistReadout(teePos);
-    drawLines();
-    persist();
-    renderPanel();
-    setMode('shot');
-
-  } else if (mode === 'green') {
-    if (greenStep === 0) {
-      frontPos = [lng, lat];
-      greenStep = 1;
-      setHint('Now tap <b style="color:#1a6e3a">back edge</b> of green');
+  if (s === STEP.BALL) {
+    clearCurrentShot();
+    if (isOnCourse) {
+      setHint('Walk to your ball, then press <b>Set Ball Position</b>');
+      btn.textContent = '📍 Set Ball Position';
+      btn.className = 'gps';
     } else {
-      backPos = [lng, lat];
-      midPos = [(frontPos[0]+backPos[0])/2, (frontPos[1]+backPos[1])/2];
-      placeFrontBackMarkers();
-      if (teePos) updateDistReadout(teePos);
-      persist();
-      setMode('shot');
-      renderPanel();
+      setHint('Tap the map to place your ball, then confirm');
+      btn.textContent = '✓ Confirm Ball Position';
+      btn.className = 'confirm';
+      // In manual mode, allow user to tap to place ball
+      map.getCanvas().style.cursor = 'crosshair';
+    }
+    btn.style.display = 'block';
+
+  } else if (s === STEP.TARGET) {
+    if (isOnCourse) {
+      setHint('Tap map to place target — drag to adjust');
+    } else {
+      setHint('Tap map to place target — drag to adjust');
+    }
+    btn.textContent = '⛳ Set Target';
+    btn.className = 'confirm';
+    btn.style.display = targetPos ? 'block' : 'none';
+    map.getCanvas().style.cursor = 'crosshair';
+
+  } else if (s === STEP.CLUB) {
+    setHint('Select your club');
+    btn.textContent = '🏌️ Select Club';
+    btn.className = 'club';
+    btn.style.display = 'block';
+    openClubPicker();
+
+  } else if (s === STEP.RESULT) {
+    if (isOnCourse) {
+      setHint('Walk to where your ball landed, then press <b>Set Result</b>');
+      btn.textContent = '📍 Set Result';
+      btn.className = 'result';
+    } else {
+      setHint('Tap the map where your ball landed');
+      btn.textContent = '✓ Confirm Result';
+      btn.className = 'result';
+      map.getCanvas().style.cursor = 'crosshair';
+    }
+    btn.style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ACTION BUTTON
+// ══════════════════════════════════════════════════════════════
+function handleAction() {
+  if (step === STEP.BALL) {
+    if (isOnCourse) {
+      // Log current GPS as ball position
+      if (!currentGPS) { alert('Waiting for GPS signal…'); return; }
+      ballPos = currentGPS.slice();
+      placeBallMarker(ballPos);
+      goToStep(STEP.TARGET);
+    } else {
+      // Confirm manually placed ball
+      if (!ballPos) { alert('Tap the map to place your ball first'); return; }
+      goToStep(STEP.TARGET);
     }
 
-  } else if (mode === 'shot') {
-    // Show crosshair at tap position
-    showCrosshair(e.point.x, e.point.y, lng, lat);
+  } else if (step === STEP.TARGET) {
+    if (!targetPos) { alert('Tap the map to place a target first'); return; }
+    goToStep(STEP.CLUB);
+
+  } else if (step === STEP.CLUB) {
+    openClubPicker();
+
+  } else if (step === STEP.RESULT) {
+    if (isOnCourse) {
+      if (!currentGPS) { alert('Waiting for GPS signal…'); return; }
+      resultPos = currentGPS.slice();
+      placeResultMarker(resultPos);
+      logShot();
+    } else {
+      if (!resultPos) { alert('Tap the map where your ball landed'); return; }
+      logShot();
+    }
   }
 }
 
-// ── Crosshair / Draggable Target ──────────────────────────────────────────────
-function showCrosshair(px, py, lng, lat) {
-  crosshairLngLat = [lng, lat];
-  var ch = document.getElementById('crosshair');
-  ch.style.left = px + 'px';
-  ch.style.top  = py + 'px';
-  document.getElementById('crosshair-container').classList.add('on');
-  document.getElementById('set-target-btn').style.display = 'block';
+// ══════════════════════════════════════════════════════════════
+// MAP CLICK
+// ══════════════════════════════════════════════════════════════
+function handleMapClick(e) {
+  if (isDraggingTarget) return;
+  var lng = e.lngLat.lng, lat = e.lngLat.lat;
 
-  // Preview label
-  updateCrosshairPreview(lng, lat);
-  setHint('Drag to adjust, then tap <b>Set Target</b>');
-}
+  if (step === STEP.BALL && !isOnCourse) {
+    // Manual: tap to place ball
+    ballPos = [lng, lat];
+    placeBallMarker(ballPos);
 
-function hideCrosshair() {
-  document.getElementById('crosshair-container').classList.remove('on');
-  document.getElementById('set-target-btn').style.display = 'none';
-  if (crosshairPreviewMarker) { crosshairPreviewMarker.remove(); crosshairPreviewMarker = null; }
-  crosshairLngLat = null;
-}
+  } else if (step === STEP.TARGET) {
+    targetPos = [lng, lat];
+    placeTargetMarker(targetPos);
+    updateDistPreview(lng, lat);
+    document.getElementById('action-btn').style.display = 'block';
 
-function updateCrosshairPreview(lng, lat) {
-  var dTee = teePos ? haversine(teePos[1],teePos[0],lat,lng) : null;
-  var dPin = pinPos ? haversine(pinPos[1],pinPos[0],lat,lng) : null;
-  var txt = '';
-  if (dTee !== null) txt += '📏 ' + yds(dTee);
-  if (dPin !== null) txt += '  ⛳ ' + yds(dPin);
-  txt += ' yds';
-
-  if (crosshairPreviewMarker) {
-    crosshairPreviewMarker.setLngLat([lng,lat]);
-    crosshairPreviewMarker.getElement().textContent = txt;
-  } else {
-    var el = document.createElement('div');
-    el.className = 'target-preview';
-    el.textContent = txt;
-    crosshairPreviewMarker = new mapboxgl.Marker({ element:el, anchor:'bottom', offset:[0,-36] })
-      .setLngLat([lng,lat]).addTo(map);
+  } else if (step === STEP.RESULT && !isOnCourse) {
+    resultPos = [lng, lat];
+    placeResultMarker(resultPos);
   }
 }
 
-// Touch handling for dragging crosshair
-function handleTouchForCrosshair(e) {
-  if (mode !== 'shot' || !crosshairLngLat) return;
+// ══════════════════════════════════════════════════════════════
+// TARGET DRAG (touch)
+// ══════════════════════════════════════════════════════════════
+var touchStartEl = null;
+
+function onTouchStart(e) {
+  if (step !== STEP.TARGET) return;
+  if (!targetMarker) return;
+  // Check if touch is near target marker
+  var markerEl = targetMarker.getElement();
+  var mRect = markerEl.getBoundingClientRect();
+  var touch = e.originalEvent.touches[0];
+  var dx = touch.clientX - (mRect.left + mRect.width/2);
+  var dy = touch.clientY - (mRect.top + mRect.height/2);
+  if (Math.sqrt(dx*dx + dy*dy) < 40) {
+    isDraggingTarget = true;
+    map.dragPan.disable();
+  }
 }
 
-function handleTouchMoveForCrosshair(e) {
-  if (mode !== 'shot' || !crosshairLngLat) return;
-  if (!e.originalEvent.touches || e.originalEvent.touches.length !== 1) return;
+function onTouchMove(e) {
+  if (!isDraggingTarget) return;
+  e.originalEvent.preventDefault();
   var touch = e.originalEvent.touches[0];
   var rect = map.getCanvas().getBoundingClientRect();
   var x = touch.clientX - rect.left;
   var y = touch.clientY - rect.top;
-  var lngLat = map.unproject([x, y]);
-
-  var ch = document.getElementById('crosshair');
-  ch.style.left = x + 'px';
-  ch.style.top  = y + 'px';
-  crosshairLngLat = [lngLat.lng, lngLat.lat];
-  updateCrosshairPreview(lngLat.lng, lngLat.lat);
+  var ll = map.unproject([x, y]);
+  targetPos = [ll.lng, ll.lat];
+  targetMarker.setLngLat(targetPos);
+  updateDistPreview(ll.lng, ll.lat);
 }
 
-function confirmTarget() {
-  if (!crosshairLngLat) return;
-  if (!teePos || !pinPos) { alert('Set tee and pin first.'); return; }
-
-  var lng = crosshairLngLat[0], lat = crosshairLngLat[1];
-  var dTee = haversine(teePos[1],teePos[0],lat,lng);
-  var dPin = haversine(pinPos[1],pinPos[0],lat,lng);
-  var shot = { id:Date.now(), lng:lng, lat:lat, num:shots.length+1, dTee:dTee, dPin:dPin };
-  shots.push(shot);
-  placeShotMarker(shot);
-  drawLines();
-  persist();
-  renderPanel();
-  hideCrosshair();
-  setHint('Shot logged! Tap again to mark next shot');
-}
-
-// ── Markers ───────────────────────────────────────────────────────────────────
-function mkEl(cls) { var e = document.createElement('div'); e.className = cls; return e; }
-
-function placeTeeMarker() {
-  if (teeMarker) teeMarker.remove();
-  var el = mkEl('tee-dot'); el.textContent = 'TEE';
-  teeMarker = new mapboxgl.Marker({ element:el, anchor:'center' })
-    .setLngLat(teePos).addTo(map);
-}
-
-function placePinMarker() {
-  if (pinMarker) pinMarker.remove();
-  var el = mkEl('pin-flag'); el.textContent = '⛳';
-  pinMarker = new mapboxgl.Marker({ element:el, anchor:'bottom' })
-    .setLngLat(pinPos).addTo(map);
-}
-
-// ── Yardage dots (50/100/150 from pin back toward tee) ────────────────────────
-function placeYardageDots() {
-  [yd50m,yd100m,yd150m,yd50l,yd100l,yd150l].forEach(function(m){ if(m) m.remove(); });
-  yd50m=yd100m=yd150m=yd50l=yd100l=yd150l=null;
-
-  if (!teePos || !pinPos) return;
-
-  var defs = [
-    { dist:50,  cls:'y50',  lblCls:'yd-lbl yellow', label:'50' },
-    { dist:100, cls:'y100', lblCls:'yd-lbl red',    label:'100' },
-    { dist:150, cls:'y150', lblCls:'yd-lbl white',  label:'150' }
-  ];
-
-  defs.forEach(function(d) {
-    var pos = interpolateFromPin(pinPos, teePos, d.dist);
-    if (!pos) return;
-
-    var dotEl = mkEl('yd-dot ' + d.cls);
-    var dotM = new mapboxgl.Marker({ element:dotEl, anchor:'center' })
-      .setLngLat(pos).addTo(map);
-
-    var lblEl = document.createElement('div');
-    lblEl.className = d.lblCls;
-    lblEl.textContent = d.label + ' yds';
-    var lblM = new mapboxgl.Marker({ element:lblEl, anchor:'bottom', offset:[0,-12] })
-      .setLngLat(pos).addTo(map);
-
-    if (d.dist === 50)  { yd50m  = dotM; yd50l  = lblM; }
-    if (d.dist === 100) { yd100m = dotM; yd100l = lblM; }
-    if (d.dist === 150) { yd150m = dotM; yd150l = lblM; }
-  });
-}
-
-// Calculate position X yards from pin toward tee along the line
-function interpolateFromPin(pin, tee, yards) {
-  var totalM = haversine(pin[1],pin[0],tee[1],tee[0]);
-  if (totalM === 0) return null;
-  var targetM = yards * 0.9144; // yards to meters
-  if (targetM > totalM) return null; // tee is closer than this distance
-  var frac = targetM / totalM;
-  return [
-    pin[0] + (tee[0] - pin[0]) * frac,
-    pin[1] + (tee[1] - pin[1]) * frac
-  ];
-}
-
-// ── Front / Middle / Back green markers ──────────────────────────────────────
-function placeFrontBackMarkers() {
-  [frontMarker,backMarker,midMarker,frontLbl,backLbl,midLbl].forEach(function(m){ if(m) m.remove(); });
-
-  var fe = mkEl('front-dot');
-  frontMarker = new mapboxgl.Marker({ element:fe, anchor:'center' }).setLngLat(frontPos).addTo(map);
-  var fl = document.createElement('div'); fl.className='yd-lbl yellow'; fl.textContent='Front';
-  frontLbl = new mapboxgl.Marker({ element:fl, anchor:'bottom', offset:[0,-10] }).setLngLat(frontPos).addTo(map);
-
-  var be = mkEl('back-dot');
-  backMarker = new mapboxgl.Marker({ element:be, anchor:'center' }).setLngLat(backPos).addTo(map);
-  var bl = document.createElement('div'); bl.className='yd-lbl white'; bl.textContent='Back';
-  backLbl = new mapboxgl.Marker({ element:bl, anchor:'bottom', offset:[0,-10] }).setLngLat(backPos).addTo(map);
-
-  var me = mkEl('mid-dot');
-  midMarker = new mapboxgl.Marker({ element:me, anchor:'center' }).setLngLat(midPos).addTo(map);
-  var ml = document.createElement('div'); ml.className='yd-lbl'; ml.textContent='Mid';
-  midLbl = new mapboxgl.Marker({ element:ml, anchor:'bottom', offset:[0,-12] }).setLngLat(midPos).addTo(map);
-}
-
-// ── Distance readout (bottom-left) ───────────────────────────────────────────
-function updateDistReadout(fromPos) {
-  if (!fromPos) return;
-
-  var fPos = frontPos || null;
-  var mPos = midPos   || pinPos || null;
-  var bPos = backPos  || null;
-
-  document.getElementById('yds-front').textContent = fPos
-    ? yds(haversine(fromPos[1],fromPos[0],fPos[1],fPos[0])) : '—';
-  document.getElementById('yds-mid').textContent = mPos
-    ? yds(haversine(fromPos[1],fromPos[0],mPos[1],mPos[0])) : '—';
-  document.getElementById('yds-back').textContent = bPos
-    ? yds(haversine(fromPos[1],fromPos[0],bPos[1],bPos[0])) : '—';
-}
-
-// ── Lines ─────────────────────────────────────────────────────────────────────
-function drawLines() {
-  rmLyr('lyr-tpin'); rmSrc('src-tpin');
-  rmLyr('lyr-shots'); rmSrc('src-shots');
-  if (!teePos || !pinPos) return;
-
-  addSrc('src-tpin', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[teePos,pinPos] }}});
-  addLyr({ id:'lyr-tpin', type:'line', source:'src-tpin',
-    paint:{ 'line-color':'#c9a84c', 'line-width':1.5, 'line-opacity':0.45, 'line-dasharray':[4,3] }});
-
-  if (shots.length > 0) {
-    addSrc('src-shots', { type:'geojson', data:{ type:'FeatureCollection', features:
-      shots.map(function(s){ return { type:'Feature', geometry:{ type:'LineString',
-        coordinates:[[s.lng,s.lat],pinPos] }}; })
-    }});
-    addLyr({ id:'lyr-shots', type:'line', source:'src-shots',
-      paint:{ 'line-color':'#4a8c5c', 'line-width':1, 'line-opacity':0.45 }});
+function onTouchEnd(e) {
+  if (isDraggingTarget) {
+    isDraggingTarget = false;
+    map.dragPan.enable();
   }
 }
 
-function addSrc(id,d){ if(!map.getSource(id)) map.addSource(id,d); }
-function addLyr(s){ if(!map.getLayer(s.id)) map.addLayer(s); }
-function rmLyr(id){ if(map.getLayer(id)) map.removeLayer(id); }
-function rmSrc(id){ if(map.getSource(id)) map.removeSource(id); }
+// ══════════════════════════════════════════════════════════════
+// DISTANCE PREVIEW (while dragging target)
+// ══════════════════════════════════════════════════════════════
+function updateDistPreview(lng, lat) {
+  var dBall = ballPos ? yds(haversine(ballPos[1],ballPos[0],lat,lng)) : null;
+  var dMid  = midPos  ? yds(haversine(midPos[1], midPos[0], lat,lng)) :
+              pinPos  ? yds(haversine(pinPos[1],  pinPos[0], lat,lng)) : null;
 
-// ── Shot markers ──────────────────────────────────────────────────────────────
-function placeShotMarker(shot) {
-  var el = mkEl('shot-marker'); el.textContent = shot.num;
-  var m = new mapboxgl.Marker({ element:el, anchor:'center' })
-    .setLngLat([shot.lng,shot.lat]).addTo(map);
-  shot._marker = m;
+  var parts = [];
+  if (dBall !== null) parts.push('🏌️ ' + dBall + ' yds');
+  if (dMid  !== null) parts.push('⛳ ' + dMid + ' to pin');
+  var txt = parts.join('   ');
 
-  var lblEl = document.createElement('div');
-  lblEl.className = 'shot-lbl';
-  lblEl.innerHTML = '📏 '+yds(shot.dTee)+' · ⛳ '+yds(shot.dPin)+' yds';
-  var lbl = new mapboxgl.Marker({ element:lblEl, anchor:'bottom', offset:[0,-16] })
-    .setLngLat([shot.lng,shot.lat]).addTo(map);
-  shot._lbl = lbl;
+  if (!targetPreviewMarker) {
+    var el = document.createElement('div');
+    el.className = 'dist-preview';
+    el.textContent = txt;
+    targetPreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', offset: [0, -22] })
+      .setLngLat([lng, lat]).addTo(map);
+  } else {
+    targetPreviewMarker.setLngLat([lng, lat]);
+    targetPreviewMarker.getElement().textContent = txt;
+  }
+}
 
-  var vis = true;
-  el.addEventListener('click', function(e){
-    e.stopPropagation();
-    vis = !vis;
-    lblEl.style.display = vis ? '' : 'none';
+// ══════════════════════════════════════════════════════════════
+// CLUB PICKER
+// ══════════════════════════════════════════════════════════════
+function buildClubPicker() {
+  var scroll = document.getElementById('club-scroll');
+  scroll.innerHTML = '';
+  CLUBS.forEach(function(c) {
+    var chip = document.createElement('button');
+    chip.className = 'club-chip';
+    chip.textContent = c;
+    chip.onclick = function() {
+      document.querySelectorAll('.club-chip').forEach(function(x){ x.classList.remove('selected'); });
+      chip.classList.add('selected');
+      selectedClub = c;
+    };
+    scroll.appendChild(chip);
   });
 }
 
-// ── Panel ─────────────────────────────────────────────────────────────────────
-function setHint(html) {
-  var el = document.getElementById('hint-pill');
-  el.style.display = html ? 'block' : 'none';
-  el.innerHTML = html || '';
+function openClubPicker() {
+  var cp = document.getElementById('club-picker');
+  cp.style.display = 'flex';
+  setTimeout(function(){ cp.classList.add('open'); }, 10);
 }
 
-function renderPanel() {
-  var statsRow  = document.getElementById('stats-row');
-  var shotList  = document.getElementById('shot-list');
-  var actRow    = document.getElementById('act-row');
+function closeClubPicker() {
+  var cp = document.getElementById('club-picker');
+  cp.classList.remove('open');
+  setTimeout(function(){ cp.style.display = 'none'; }, 300);
+}
 
-  if (!pinPos) {
-    statsRow.style.display = 'none';
-    shotList.style.display = 'none';
-    actRow.style.display = 'none';
+function confirmClub() {
+  if (!selectedClub) { alert('Select a club first'); return; }
+  closeClubPicker();
+  goToStep(STEP.RESULT);
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOG SHOT
+// ══════════════════════════════════════════════════════════════
+function logShot() {
+  if (!ballPos || !targetPos || !resultPos || !selectedClub) return;
+
+  var carryM    = haversine(ballPos[1],   ballPos[0],   resultPos[1], resultPos[0]);
+  var toTargetM = haversine(ballPos[1],   ballPos[0],   targetPos[1], targetPos[0]);
+
+  // Calculate right/left and long/short offset from target
+  var miss = calcMiss(ballPos, targetPos, resultPos);
+
+  var shot = {
+    id:        Date.now(),
+    date:      new Date().toISOString(),
+    roundId:   getRoundId(),
+    club:      selectedClub,
+    mode:      isOnCourse ? 'oncourse' : 'manual',
+    ball:      { lat: ballPos[1],   lng: ballPos[0] },
+    target:    { lat: targetPos[1], lng: targetPos[0] },
+    result:    { lat: resultPos[1], lng: resultPos[0] },
+    carryYds:  Math.round(carryM   * 1.09361),
+    targetYds: Math.round(toTargetM * 1.09361),
+    missLat:   miss.lateral,   // + = right, - = left
+    missLng:   miss.depth,     // + = long,  - = short
+  };
+
+  lastPendingShot = shot;
+  showShotSummary(shot);
+}
+
+function getRoundId() {
+  var d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+// ══════════════════════════════════════════════════════════════
+// MISS CALCULATION (lateral + depth relative to target line)
+// ══════════════════════════════════════════════════════════════
+function calcMiss(ball, target, result) {
+  // Project onto ball→target line, compute perpendicular offset
+  var bx = ball[0],   by = ball[1];
+  var tx = target[0], ty = target[1];
+  var rx = result[0], ry = result[1];
+
+  // Direction vector (ball → target)
+  var dx = tx - bx, dy = ty - by;
+  var len = Math.sqrt(dx*dx + dy*dy);
+  if (len === 0) return { lateral: 0, depth: 0 };
+  var ux = dx/len, uy = dy/len;
+
+  // Vector ball → result
+  var vrx = rx - bx, vry = ry - by;
+
+  // Depth = projection onto target direction (positive = long)
+  var depthDeg = vrx*ux + vry*uy;
+  // Lateral = cross product (positive = right)
+  var latDeg = vrx*uy - vry*ux;
+
+  // Convert degrees to yards (rough: 1 deg lat ≈ 111,000m, lng varies)
+  var metersPerDegLat = 111000;
+  var metersPerDegLng = 111000 * Math.cos(by * Math.PI / 180);
+  var depthM = depthDeg * ((Math.abs(uy) * metersPerDegLat + Math.abs(ux) * metersPerDegLng) / 1);
+  var latM   = latDeg   * ((Math.abs(ux) * metersPerDegLat + Math.abs(uy) * metersPerDegLng) / 1);
+
+  var targetDist = haversine(by, bx, ty, tx);
+  // Correct depth so 0 = exactly at target distance
+  var resultDist = haversine(by, bx, ry, rx);
+  var depthYds = Math.round((resultDist - targetDist) * 1.09361);
+  var latYds   = Math.round(latM * 1.09361);
+
+  return { lateral: latYds, depth: depthYds };
+}
+
+// ══════════════════════════════════════════════════════════════
+// SHOT SUMMARY
+// ══════════════════════════════════════════════════════════════
+function showShotSummary(shot) {
+  var grid = document.getElementById('ss-grid');
+  var miss = document.getElementById('ss-miss');
+
+  grid.innerHTML =
+    cell('Carry',    shot.carryYds,  'yds') +
+    cell('To Target', shot.targetYds, 'yds') +
+    cell('Club',      shot.club,      '') +
+    cell('Date',      shot.roundId,   '');
+
+  var latTxt  = shot.missLat === 0  ? 'On line' :
+                (Math.abs(shot.missLat) + ' yds ' + (shot.missLat > 0 ? 'RIGHT' : 'LEFT'));
+  var depthTxt = shot.missLng === 0 ? 'On distance' :
+                (Math.abs(shot.missLng) + ' yds ' + (shot.missLng > 0 ? 'LONG' : 'SHORT'));
+
+  miss.innerHTML = 'Miss: <span>' + latTxt + '</span> · <span>' + depthTxt + '</span>';
+
+  document.getElementById('shot-summary').style.display = 'flex';
+  document.getElementById('action-btn').style.display = 'none';
+}
+
+function cell(label, val, unit) {
+  return '<div class="ss-cell"><div class="ss-cell-label">'+label+'</div>' +
+    '<div class="ss-cell-val">'+val+'</div>' +
+    (unit ? '<div class="ss-cell-unit">'+unit+'</div>' : '') + '</div>';
+}
+
+function nextShot() {
+  if (lastPendingShot) { db_addShot(lastPendingShot); lastPendingShot = null; }
+  document.getElementById('shot-summary').style.display = 'none';
+  goToStep(STEP.BALL);
+}
+
+function discardShot() {
+  lastPendingShot = null;
+  document.getElementById('shot-summary').style.display = 'none';
+  goToStep(STEP.BALL);
+}
+
+// ══════════════════════════════════════════════════════════════
+// PLACE MARKERS
+// ══════════════════════════════════════════════════════════════
+function placeBallMarker(pos) {
+  if (ballMarker) ballMarker.remove();
+  var el = document.createElement('div'); el.className = 'ball-marker';
+  ballMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+    .setLngLat(pos).addTo(map);
+}
+
+function placeTargetMarker(pos) {
+  if (targetMarker) targetMarker.remove();
+  var el = document.createElement('div');
+  el.className = 'target-marker';
+  el.innerHTML = '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    '<circle cx="30" cy="30" r="20" stroke="#e8c96a" stroke-width="1.5" stroke-dasharray="5 3"/>' +
+    '<circle cx="30" cy="30" r="4" fill="#e8c96a"/>' +
+    '<line x1="30" y1="4"  x2="30" y2="18" stroke="#e8c96a" stroke-width="1.5"/>' +
+    '<line x1="30" y1="42" x2="30" y2="56" stroke="#e8c96a" stroke-width="1.5"/>' +
+    '<line x1="4"  y1="30" x2="18" y2="30" stroke="#e8c96a" stroke-width="1.5"/>' +
+    '<line x1="42" y1="30" x2="56" y2="30" stroke="#e8c96a" stroke-width="1.5"/>' +
+    '</svg>';
+  targetMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+    .setLngLat(pos).addTo(map);
+}
+
+function placeResultMarker(pos) {
+  if (resultMarker) resultMarker.remove();
+  var el = document.createElement('div'); el.className = 'result-marker';
+  resultMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+    .setLngLat(pos).addTo(map);
+}
+
+function clearCurrentShot() {
+  if (ballMarker)   { ballMarker.remove();   ballMarker = null; }
+  if (targetMarker) { targetMarker.remove(); targetMarker = null; }
+  if (resultMarker) { resultMarker.remove(); resultMarker = null; }
+  if (targetPreviewMarker) { targetPreviewMarker.remove(); targetPreviewMarker = null; }
+  ballPos = null; targetPos = null; resultPos = null; selectedClub = null;
+  map.getCanvas().style.cursor = '';
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATS SCREEN
+// ══════════════════════════════════════════════════════════════
+function openStats() {
+  var shots = db_load();
+  var content = document.getElementById('stats-content');
+
+  if (shots.length === 0) {
+    content.innerHTML = '<div class="no-data">No shots logged yet.<br>Get out there! ⛳</div>';
+    document.getElementById('stats-screen').classList.add('open');
     return;
   }
 
-  statsRow.style.display = 'flex';
-  var ttd = haversine(teePos[1],teePos[0],pinPos[1],pinPos[0]);
-  document.getElementById('sv-pin').textContent   = yds(ttd);
-  document.getElementById('sv-shots').textContent = shots.length;
+  // Group by club
+  var byClub = {};
+  CLUBS.forEach(function(c){ byClub[c] = []; });
+  shots.forEach(function(s){ if (byClub[s.club]) byClub[s.club].push(s); });
 
-  if (shots.length > 0) {
-    shotList.style.display = 'block';
-    var html = '';
-    shots.forEach(function(s){
-      html += '<div class="shot-row">' +
-        '<div class="s-badge">'+s.num+'</div>' +
-        '<div class="s-dists">' +
-        '<div class="s-d">📏 <span>'+yds(s.dTee)+'</span> yds</div>' +
-        '<div class="s-d">⛳ <span>'+yds(s.dPin)+'</span> yds</div>' +
-        '</div>' +
-        '<button class="del-btn" onclick="delShot('+s.id+')">✕</button>' +
-        '</div>';
-    });
-    shotList.innerHTML = html;
-  } else {
-    shotList.style.display = 'none';
-  }
+  var html = '';
+  CLUBS.forEach(function(club) {
+    var cs = byClub[club];
+    if (cs.length === 0) return;
 
-  actRow.style.display = 'flex';
-  setHint(shots.length === 0 ? 'Tap the map to mark a shot' : '');
-}
+    var avgCarry  = avg(cs.map(function(s){ return s.carryYds; }));
+    var avgLat    = avg(cs.map(function(s){ return Math.abs(s.missLat); }));
+    var avgDepth  = avg(cs.map(function(s){ return Math.abs(s.missLng); }));
+    var latBias   = avg(cs.map(function(s){ return s.missLat; }));
+    var depthBias = avg(cs.map(function(s){ return s.missLng; }));
 
-// ── Actions ───────────────────────────────────────────────────────────────────
-function delShot(id) {
-  var s = shots.find(function(s){ return s.id===id; });
-  if (s) { if(s._marker) s._marker.remove(); if(s._lbl) s._lbl.remove(); }
-  shots = shots.filter(function(s){ return s.id!==id; });
-  shots.forEach(function(s,i){
-    s.num = i+1;
-    if (s._marker) s._marker.getElement().textContent = s.num;
-    if (s._lbl) s._lbl.getElement().innerHTML = '📏 '+yds(s.dTee)+' · ⛳ '+yds(s.dPin)+' yds';
+    html += '<div class="club-stat-card">' +
+      '<div class="csc-header">' +
+        '<div class="csc-club">' + club + '</div>' +
+        '<div class="csc-shots">' + cs.length + ' shot' + (cs.length>1?'s':'') + '</div>' +
+      '</div>' +
+      '<div class="csc-grid">' +
+        cscCell('Avg Carry',   Math.round(avgCarry),  'yds') +
+        cscCell('Avg Miss Lat', Math.round(avgLat),   'yds') +
+        cscCell('Avg Miss Dep', Math.round(avgDepth), 'yds') +
+        cscCell('Lat Bias',   (latBias>0?'R ':'L ')+Math.abs(Math.round(latBias)),   'yds') +
+        cscCell('Depth Bias', (depthBias>0?'Long ':'Short ')+Math.abs(Math.round(depthBias)), 'yds') +
+        cscCell('Shots',      cs.length, '') +
+      '</div>' +
+    '</div>';
   });
-  persist(); drawLines(); renderPanel();
+
+  content.innerHTML = html;
+  document.getElementById('stats-screen').classList.add('open');
 }
 
-function clearMarkers() {
-  shots.forEach(function(s){ if(s._marker) s._marker.remove(); if(s._lbl) s._lbl.remove(); });
-  shots = [];
-  [teeMarker,pinMarker,frontMarker,backMarker,midMarker,
-   frontLbl,backLbl,midLbl,yd50m,yd100m,yd150m,yd50l,yd100l,yd150l].forEach(function(m){ if(m) m.remove(); });
-  teeMarker=pinMarker=frontMarker=backMarker=midMarker=null;
-  frontLbl=backLbl=midLbl=yd50m=yd100m=yd150m=yd50l=yd100l=yd150l=null;
-  rmLyr('lyr-tpin'); rmSrc('src-tpin');
-  rmLyr('lyr-shots'); rmSrc('src-shots');
+function cscCell(label, val, unit) {
+  return '<div class="csc-cell"><div class="csc-label">'+label+'</div>' +
+    '<div class="csc-val">'+val+'</div>' +
+    (unit?'<div class="csc-unit">'+unit+'</div>':'') + '</div>';
 }
 
-function newHole() {
-  clearMarkers();
-  teePos=null; pinPos=null; frontPos=null; backPos=null; midPos=null;
-  localStorage.removeItem('gst3');
-  // Reset to Rock Creek Hole 1
-  teePos = [ROCK_CREEK.lng, ROCK_CREEK.lat];
-  placeTeeMarker();
-  map.flyTo({ center:teePos, zoom:18, duration:600 });
-  persist();
-  document.getElementById('yds-front').textContent='—';
-  document.getElementById('yds-mid').textContent='—';
-  document.getElementById('yds-back').textContent='—';
-  setMode('target'); renderPanel();
+function closeStats() { document.getElementById('stats-screen').classList.remove('open'); }
+
+function avg(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce(function(a,b){ return a+b; }, 0) / arr.length;
 }
 
-function clearAll() {
-  if (!confirm('Clear everything?')) return;
-  clearMarkers();
-  teePos=null; pinPos=null; frontPos=null; backPos=null; midPos=null;
-  localStorage.removeItem('gst3');
-  document.getElementById('yds-front').textContent='—';
-  document.getElementById('yds-mid').textContent='—';
-  document.getElementById('yds-back').textContent='—';
-  setMode('tee'); renderPanel();
-}
-
-function resetNorth() { if(map) map.easeTo({ bearing:0, pitch:0, duration:400 }); }
-
+// ══════════════════════════════════════════════════════════════
+// MAP CONTROLS
+// ══════════════════════════════════════════════════════════════
 function toggleSat() {
   if (!map) return;
   isSat = !isSat;
   map.setStyle(isSat
     ? 'mapbox://styles/mapbox/satellite-streets-v12'
     : 'mapbox://styles/mapbox/outdoors-v12');
-  map.once('styledata', function(){
-    if (teePos && pinPos) drawLines();
-  });
+}
+function resetNorth() { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 400 }); }
+
+// ══════════════════════════════════════════════════════════════
+// HINT
+// ══════════════════════════════════════════════════════════════
+function setHint(html) {
+  document.getElementById('hint-text').innerHTML = html || '';
+  document.getElementById('hint-bar').style.display = html ? 'block' : 'none';
 }
 
-// ── Math ──────────────────────────────────────────────────────────────────────
-function haversine(lat1,lng1,lat2,lng2) {
-  var R=6371000;
-  var p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
-  var dp=(lat2-lat1)*Math.PI/180, dl=(lng2-lng1)*Math.PI/180;
-  var a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+// ══════════════════════════════════════════════════════════════
+// MATH
+// ══════════════════════════════════════════════════════════════
+function haversine(lat1, lng1, lat2, lng2) {
+  var R = 6371000;
+  var p1 = lat1*Math.PI/180, p2 = lat2*Math.PI/180;
+  var dp = (lat2-lat1)*Math.PI/180, dl = (lng2-lng1)*Math.PI/180;
+  var a  = Math.sin(dp/2)*Math.sin(dp/2) + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-function yds(m) { return Math.round(m*1.09361); }
+function yds(m) { return Math.round(m * 1.09361); }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════════
 window.addEventListener('load', function() {
   var t = localStorage.getItem('gst_token');
-  if (t) { document.getElementById('token-input').value=t; launch(); }
+  if (t) { document.getElementById('token-input').value = t; launch(); }
 });
 </script>
-
 </body>
 </html>
