@@ -13,1067 +13,1223 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@600;700&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --ink:    #080f0a;
-  --gd:     #0c1e12;
-  --gm:     #163020;
-  --gl:     #2d6040;
-  --glx:    #4a8c5c;
-  --cream:  #f0ebe0;
-  --sand:   #c8bea0;
-  --gold:   #c9a84c;
-  --goldl:  #e8c96a;
-  --red:    #cc3333;
-  --blue:   #4285F4;
-  --safe-t: env(safe-area-inset-top, 0px);
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --glass:  rgba(5, 12, 8, 0.84);
-  --gb:     rgba(60, 120, 80, 0.25);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#080f0a; --gd:#0c1e12; --gm:#163020; --gl:#2d6040; --glx:#4a8c5c;
+  --cream:#f0ebe0; --sand:#c8bea0; --gold:#c9a84c; --goldl:#e8c96a;
+  --red:#cc3333; --green:#2d8a50; --blue:#4285F4;
+  --glass:rgba(5,12,8,0.86); --gb:rgba(60,120,80,0.22);
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+html{height:100%;background:#000;}
+body{
+  margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;
+  background:#000;font-family:'DM Mono',monospace;color:var(--cream);
+  position:fixed;top:0;left:0;right:0;bottom:0;
 }
 
-html {
-  height: 100%;
-  /* fill including notch/island */
-  background: #000;
+/* ══ MAP ══ */
+#map{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;}
+.mapboxgl-canvas{outline:none;}
+.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right,
+.mapboxgl-ctrl-top-left,.mapboxgl-ctrl-top-right{display:none!important;}
+
+/* ══ SCREEN LAYER BASE ══ */
+.screen{
+  position:fixed;inset:0;z-index:200;
+  background:var(--ink);overflow-y:auto;
+  display:none;flex-direction:column;
+  padding:max(20px,var(--safe-t)) 0 max(20px,var(--safe-b));
 }
-body {
-  margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background: #000;
-  font-family: 'DM Mono', monospace;
-  color: var(--cream);
-  /* iOS PWA full bleed */
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+.screen.open{display:flex;}
+
+/* ══ TOKEN SCREEN ══ */
+#token-screen{
+  position:fixed;inset:0;z-index:400;background:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:max(40px,var(--safe-t)) 24px max(40px,var(--safe-b));
+}
+.ts-title{font-family:'Cormorant Garamond',serif;font-size:2.4rem;color:var(--gold);text-align:center;line-height:1.1;}
+.ts-sub{font-size:0.78rem;color:var(--sand);text-align:center;line-height:1.8;max-width:300px;}
+#token-input{
+  width:100%;max-width:360px;padding:15px 16px;
+  background:var(--gd);border:1px solid var(--gold);
+  color:var(--cream);font-family:'DM Mono',monospace;font-size:0.85rem;
+  border-radius:12px;outline:none;
+}
+#token-input::placeholder{color:var(--gl);}
+#launch-btn{
+  width:100%;max-width:360px;padding:16px;
+  background:var(--gold);color:var(--ink);border:none;
+  font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:500;
+  letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:12px;
+}
+#t-status{font-size:0.72rem;color:var(--gold);text-align:center;min-height:1.2em;}
+.ts-help{font-size:0.65rem;color:#555;max-width:320px;line-height:1.9;border-top:1px solid var(--gm);padding-top:14px;}
+
+/* ══ HOME SCREEN ══ */
+#home-screen{
+  position:fixed;inset:0;z-index:300;background:var(--ink);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;padding:max(40px,var(--safe-t)) 24px max(40px,var(--safe-b));
+}
+#home-screen.open{display:flex;}
+.home-logo{font-family:'Cormorant Garamond',serif;font-size:3rem;color:var(--gold);margin-bottom:6px;}
+.home-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--cream);margin-bottom:4px;}
+.home-sub{font-size:0.62rem;color:var(--sand);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:48px;}
+.home-btn{
+  width:100%;max-width:320px;padding:20px;margin-bottom:14px;
+  border:none;border-radius:14px;cursor:pointer;
+  font-family:'DM Mono',monospace;font-size:1rem;font-weight:500;
+  letter-spacing:0.08em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+}
+.home-btn.primary{background:var(--gold);color:var(--ink);}
+.home-btn.secondary{background:var(--gm);color:var(--cream);border:1px solid var(--gb);}
+.home-btn .btn-ico{font-size:1.4rem;}
+.home-rounds-info{font-size:0.6rem;color:var(--gl);margin-top:8px;text-align:center;}
+
+/* ══ TOP BAR (map) ══ */
+#top-bar{
+  position:fixed;top:0;left:0;right:0;
+  padding-top:var(--safe-t);z-index:50;pointer-events:none;display:none;
+}
+#top-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;pointer-events:all;
+}
+.round-badge{
+  background:var(--glass);border:1px solid var(--gb);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:20px;padding:6px 14px;
+  font-size:0.62rem;color:var(--goldl);letter-spacing:0.06em;
+}
+.top-btns{display:flex;gap:6px;}
+.icon-btn{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--glass);border:1px solid var(--gb);
+  color:var(--cream);font-size:1.1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
 
-/* ── Map fills everything ── */
-#map {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
+/* ══ HINT BAR ══ */
+#hint-bar{
+  position:fixed;top:calc(var(--safe-t) + 62px);
+  left:12px;right:12px;z-index:50;
+  text-align:center;pointer-events:none;display:none;
 }
-.mapboxgl-canvas { outline: none; }
-.mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right,
-.mapboxgl-ctrl-top-left, .mapboxgl-ctrl-top-right { display: none !important; }
-
-/* ── Token screen ── */
-#token-screen {
-  position: fixed; inset: 0; z-index: 300;
-  background: var(--ink);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 14px; padding: 40px 24px;
-  padding-top: max(40px, var(--safe-t));
-  padding-bottom: max(40px, var(--safe-b));
-}
-.ts-title { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: var(--gold); text-align: center; line-height: 1.1; }
-.ts-sub { font-size: 0.68rem; color: var(--sand); text-align: center; line-height: 1.8; max-width: 300px; }
-#token-input {
-  width: 100%; max-width: 360px; padding: 13px 14px;
-  background: var(--gd); border: 1px solid var(--gold);
-  color: var(--cream); font-family: 'DM Mono', monospace; font-size: 0.75rem;
-  border-radius: 10px; outline: none;
-}
-#token-input::placeholder { color: var(--gl); }
-#launch-btn {
-  width: 100%; max-width: 360px; padding: 14px;
-  background: var(--gold); color: var(--ink); border: none;
-  font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500;
-  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border-radius: 10px;
-}
-#t-status { font-size: 0.68rem; color: var(--gold); text-align: center; min-height: 1.2em; }
-.ts-help { font-size: 0.6rem; color: #555; max-width: 320px; line-height: 1.8;
-  border-top: 1px solid var(--gm); padding-top: 12px; }
-
-/* ── Glass panel base ── */
-.glass {
-  background: var(--glass);
-  border: 1px solid var(--gb);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+#hint-text{
+  display:inline-block;padding:9px 18px;border-radius:22px;
+  font-size:0.72rem;color:var(--cream);line-height:1.5;
+  background:var(--glass);border:1px solid var(--gb);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
 
-/* ── Top bar ── */
-#top-bar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  padding-top: var(--safe-t);
-  z-index: 50;
-  pointer-events: none;
+/* ══ ACTION BUTTON ══ */
+#action-btn{
+  position:fixed;
+  bottom:calc(var(--safe-b) + 16px);
+  left:50%;transform:translateX(-50%);
+  z-index:60;padding:18px 36px;
+  border:none;font-family:'DM Mono',monospace;
+  font-size:1rem;font-weight:500;
+  letter-spacing:0.1em;text-transform:uppercase;
+  cursor:pointer;border-radius:34px;
+  box-shadow:0 4px 28px rgba(0,0,0,0.7);
+  white-space:nowrap;display:none;
+  min-width:220px;text-align:center;
 }
-#top-inner {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 10px;
-  pointer-events: all;
+#action-btn.gps   {background:var(--blue);color:#fff;}
+#action-btn.place {background:var(--gold);color:var(--ink);}
+#action-btn.confirm{background:var(--green);color:#fff;}
+#action-btn.club  {background:var(--gm);color:var(--goldl);border:1px solid var(--glx);}
+#action-btn.result{background:var(--red);color:#fff;}
+
+/* ══ MODE TOGGLE ══ */
+#mode-wrap{
+  position:fixed;bottom:calc(var(--safe-b)+16px);right:14px;
+  z-index:61;display:none;flex-direction:column;align-items:flex-end;gap:5px;
 }
-.app-title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--gold); }
-.top-controls { display: flex; gap: 6px; align-items: center; }
-.icon-btn {
-  width: 34px; height: 34px; border-radius: 8px;
-  background: var(--glass); border: 1px solid var(--gb);
-  color: var(--cream); font-size: 1rem; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+.mode-lbl{font-size:0.54rem;color:var(--sand);letter-spacing:0.1em;text-transform:uppercase;}
+.toggle{
+  width:70px;height:34px;border-radius:17px;
+  background:var(--gm);border:1px solid var(--gb);
+  position:relative;cursor:pointer;transition:background 0.2s;
+}
+.toggle.on{background:rgba(66,133,244,0.35);}
+.knob{
+  position:absolute;top:4px;left:4px;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--sand);transition:left 0.2s;
+}
+.toggle.on .knob{left:40px;background:var(--blue);}
+.toggle-txt{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-size:0.44rem;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;pointer-events:none;
+}
+.toggle-txt.l{left:7px;color:var(--sand);}
+.toggle-txt.r{right:6px;color:var(--sand);}
+.toggle.on .toggle-txt.r{color:var(--blue);}
+
+/* ══ TARGET DISTANCE OVERLAY ══ */
+#target-dist{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-120px);
+  z-index:55;display:none;
+  flex-direction:column;align-items:center;gap:4px;
+  pointer-events:none;
+}
+.td-row{
+  background:rgba(0,0,0,0.88);border:1.5px solid var(--goldl);
+  border-radius:10px;padding:8px 18px;text-align:center;
+  min-width:160px;
+}
+.td-label{font-size:0.6rem;color:var(--sand);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px;}
+.td-val{font-family:'Cormorant Garamond',serif;font-size:2.2rem;color:#fff;font-weight:700;line-height:1;}
+.td-unit{font-size:0.6rem;color:var(--sand);}
+
+/* ══ CLUB PICKER ══ */
+#club-picker{
+  position:fixed;bottom:0;left:0;right:0;z-index:150;
+  background:var(--gd);border-top:1px solid var(--gm);
+  border-radius:20px 20px 0 0;
+  padding:20px 16px calc(var(--safe-b)+20px);
+  display:none;flex-direction:column;gap:16px;
+  transform:translateY(100%);transition:transform 0.3s ease;
+}
+#club-picker.open{display:flex;transform:translateY(0);}
+.cp-title{font-size:0.72rem;color:var(--sand);text-align:center;letter-spacing:0.15em;text-transform:uppercase;}
+.cp-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+}
+.club-chip{
+  padding:12px 4px;
+  background:var(--gm);border:1px solid var(--gb);
+  color:var(--sand);font-family:'DM Mono',monospace;
+  font-size:0.78rem;border-radius:10px;cursor:pointer;
+  text-align:center;transition:all 0.1s;
+}
+.club-chip.selected{background:var(--gold);border-color:var(--goldl);color:var(--ink);font-weight:500;}
+.cp-confirm{
+  padding:16px;background:var(--gold);color:var(--ink);border:none;
+  font-family:'DM Mono',monospace;font-size:0.9rem;font-weight:500;
+  letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:12px;
 }
 
-/* ── Mode toggle switch ── */
-#mode-toggle-wrap {
-  position: fixed;
-  bottom: calc(var(--safe-b) + 14px);
-  right: 14px;
-  z-index: 60;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+/* ══ SHOT SUMMARY ══ */
+#shot-summary{
+  position:fixed;inset:0;z-index:160;
+  background:rgba(0,0,0,0.75);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
 }
-.toggle-label { font-size: 0.5rem; color: var(--sand); letter-spacing: 0.1em; text-transform: uppercase; text-align: right; }
-.toggle-switch {
-  width: 64px; height: 30px; border-radius: 15px;
-  background: var(--gm); border: 1px solid var(--gb);
-  position: relative; cursor: pointer;
-  transition: background 0.2s;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+#shot-summary.open{display:flex;}
+.ss-card{
+  background:var(--gd);border:1px solid var(--gm);
+  border-radius:16px;padding:24px;width:100%;max-width:380px;
+  display:flex;flex-direction:column;gap:16px;
 }
-.toggle-switch.on-course { background: rgba(74,140,92,0.4); }
-.toggle-knob {
-  position: absolute; top: 3px; left: 3px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--sand); transition: left 0.2s;
+.ss-title{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold);text-align:center;}
+.ss-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ss-cell{background:var(--gm);border-radius:10px;padding:12px;text-align:center;}
+.ss-cell-lbl{font-size:0.56rem;color:var(--sand);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;}
+.ss-cell-val{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--cream);font-weight:700;line-height:1;}
+.ss-cell-unit{font-size:0.52rem;color:var(--sand);}
+.ss-miss{
+  background:var(--gm);border-radius:10px;padding:12px 16px;
+  font-size:0.75rem;color:var(--sand);text-align:center;line-height:1.7;
 }
-.toggle-switch.on-course .toggle-knob { left: 37px; background: var(--goldl); }
-.toggle-mode-txt {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  font-size: 0.42rem; font-weight: 500; letter-spacing: 0.04em;
-  text-transform: uppercase; pointer-events: none;
+.ss-miss span{color:var(--cream);font-weight:500;}
+/* In Play toggle */
+.inplay-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--gm);border-radius:10px;padding:14px 16px;
 }
-.toggle-mode-txt.left  { left: 6px;  color: var(--goldl); }
-.toggle-mode-txt.right { right: 5px; color: var(--sand); }
-.toggle-switch.on-course .toggle-mode-txt.left  { color: var(--sand); }
-.toggle-switch.on-course .toggle-mode-txt.right { color: var(--goldl); }
+.inplay-label{font-size:0.8rem;color:var(--cream);}
+.inplay-sub{font-size:0.58rem;color:var(--sand);margin-top:2px;}
+.inplay-toggle{
+  width:60px;height:30px;border-radius:15px;
+  background:#333;border:1px solid #555;
+  position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+}
+.inplay-toggle.yes{background:var(--green);}
+.inplay-toggle.no{background:var(--red);}
+.inplay-knob{
+  position:absolute;top:3px;left:3px;
+  width:22px;height:22px;border-radius:50%;
+  background:#fff;transition:left 0.2s;
+}
+.inplay-toggle.yes .inplay-knob,.inplay-toggle.no .inplay-knob{left:33px;}
+.inplay-tag{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-size:0.44rem;font-weight:500;pointer-events:none;
+}
+.inplay-tag.l{left:6px;color:rgba(255,255,255,0.7);}
+.inplay-tag.r{right:5px;color:rgba(255,255,255,0.7);}
+.ss-btns{display:flex;gap:10px;}
+.ss-btn{
+  flex:1;padding:15px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'DM Mono',monospace;font-size:0.82rem;font-weight:500;
+  letter-spacing:0.08em;text-transform:uppercase;
+}
+.ss-btn.next{background:var(--gold);color:var(--ink);}
+.ss-btn.undo{background:var(--gm);color:var(--sand);border:1px solid var(--gb);}
 
-/* ── Primary action button ── */
-#action-btn {
-  position: fixed;
-  bottom: calc(var(--safe-b) + 14px);
-  left: 50%; transform: translateX(-50%);
-  z-index: 60;
-  padding: 14px 28px;
-  background: var(--gold); color: var(--ink); border: none;
-  font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 500;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  cursor: pointer; border-radius: 30px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
-  white-space: nowrap;
-  display: none;
+/* ══ END ROUND CONFIRM ══ */
+#end-round-modal{
+  position:fixed;inset:0;z-index:250;
+  background:rgba(0,0,0,0.8);
+  display:none;align-items:center;justify-content:center;padding:20px;
 }
-#action-btn.gps  { background: var(--blue); color: #fff; }
-#action-btn.confirm { background: #2d8a50; color: #fff; }
-#action-btn.club { background: var(--gm); color: var(--goldl); border: 1px solid var(--glx); }
-#action-btn.result { background: var(--red); color: #fff; }
+#end-round-modal.open{display:flex;}
+.erm-card{
+  background:var(--gd);border:1px solid var(--gm);
+  border-radius:16px;padding:28px;width:100%;max-width:340px;
+  display:flex;flex-direction:column;gap:14px;text-align:center;
+}
+.erm-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold);}
+.erm-sub{font-size:0.72rem;color:var(--sand);line-height:1.7;}
+.erm-shots{font-family:'Cormorant Garamond',serif;font-size:2.5rem;color:var(--cream);font-weight:700;}
+.erm-btns{display:flex;gap:10px;margin-top:6px;}
+.erm-btn{
+  flex:1;padding:15px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'DM Mono',monospace;font-size:0.8rem;font-weight:500;
+  letter-spacing:0.08em;text-transform:uppercase;
+}
+.erm-btn.end{background:var(--red);color:#fff;}
+.erm-btn.cancel{background:var(--gm);color:var(--sand);border:1px solid var(--gb);}
 
-/* ── Distance readout — bottom left ── */
-#dist-box {
-  position: fixed;
-  bottom: calc(var(--safe-b) + 64px);
-  left: 10px; z-index: 55;
-  display: none; flex-direction: column; gap: 3px;
+/* ══ STATS SCREEN ══ */
+#stats-screen{z-index:300;padding:max(20px,var(--safe-t)) 0 max(80px,var(--safe-b));}
+.stats-nav{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px 16px;border-bottom:1px solid var(--gm);
+  flex-shrink:0;
 }
-.db-row {
-  display: flex; align-items: center; gap: 7px;
-  padding: 5px 10px; border-radius: 8px; min-width: 120px;
+.stats-back{
+  padding:10px 18px;border-radius:10px;
+  background:var(--gm);border:1px solid var(--gb);
+  color:var(--cream);font-family:'DM Mono',monospace;
+  font-size:0.75rem;cursor:pointer;
 }
-.db-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.db-label { font-size: 0.46rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.1em; }
-.db-val { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--cream); font-weight: 700; line-height: 1; }
-.db-unit { font-size: 0.44rem; color: var(--sand); }
+.stats-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold);}
+.stats-tabs{
+  display:flex;gap:0;padding:0 16px;margin:16px 0;flex-shrink:0;
+}
+.stats-tab{
+  flex:1;padding:12px;text-align:center;
+  font-family:'DM Mono',monospace;font-size:0.68rem;
+  letter-spacing:0.08em;text-transform:uppercase;
+  border-bottom:2px solid transparent;color:var(--sand);cursor:pointer;
+}
+.stats-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.stats-body{flex:1;padding:0 16px;overflow-y:auto;}
 
-/* ── Shot summary card ── */
-#shot-summary {
-  position: fixed;
-  top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 100; width: calc(100% - 40px); max-width: 340px;
-  padding: 20px; border-radius: 14px;
-  display: none; flex-direction: column; gap: 12px;
+/* Round selector */
+.round-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.round-item{
+  display:flex;align-items:center;gap:12px;
+  background:var(--gd);border:1px solid var(--gm);
+  border-radius:10px;padding:14px 16px;cursor:pointer;
 }
-.ss-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: var(--gold); text-align: center; }
-.ss-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ss-cell { background: var(--gm); border-radius: 8px; padding: 10px; text-align: center; }
-.ss-cell-label { font-size: 0.48rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px; }
-.ss-cell-val { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--cream); font-weight: 700; line-height: 1; }
-.ss-cell-unit { font-size: 0.46rem; color: var(--sand); }
-.ss-miss { text-align: center; font-size: 0.65rem; color: var(--sand); padding: 4px; }
-.ss-miss span { color: var(--cream); font-weight: 500; }
-.ss-btns { display: flex; gap: 8px; }
-.ss-btn {
-  flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer;
-  font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500;
-  letter-spacing: 0.08em; text-transform: uppercase;
-}
-.ss-btn.next { background: var(--gold); color: var(--ink); }
-.ss-btn.discard { background: var(--gm); color: var(--sand); border: 1px solid var(--gb); }
+.round-item.selected{border-color:var(--gold);background:rgba(201,168,76,0.08);}
+.round-date{font-size:0.82rem;color:var(--cream);font-weight:500;}
+.round-count{font-size:0.62rem;color:var(--sand);}
+.round-check{margin-left:auto;font-size:1.1rem;}
 
-/* ── Club picker ── */
-#club-picker {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 100;
-  border-radius: 16px 16px 0 0;
-  padding: 16px 16px calc(var(--safe-b) + 16px);
-  display: none; flex-direction: column; gap: 12px;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
+/* Club selector for stats */
+.club-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.cs-chip{
+  padding:9px 14px;border-radius:20px;
+  background:var(--gm);border:1px solid var(--gb);
+  color:var(--sand);font-family:'DM Mono',monospace;
+  font-size:0.72rem;cursor:pointer;
 }
-#club-picker.open { display: flex; transform: translateY(0); }
-.cp-title { font-size: 0.6rem; color: var(--sand); text-align: center; letter-spacing: 0.15em; text-transform: uppercase; }
-.cp-scroll {
-  display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px;
-  scrollbar-width: none;
-}
-.cp-scroll::-webkit-scrollbar { display: none; }
-.club-chip {
-  flex-shrink: 0; padding: 9px 14px;
-  background: var(--gm); border: 1px solid var(--gb);
-  color: var(--sand); font-family: 'DM Mono', monospace;
-  font-size: 0.65rem; border-radius: 20px; cursor: pointer;
-  white-space: nowrap; transition: all 0.1s;
-}
-.club-chip.selected { background: var(--gold); border-color: var(--goldl); color: var(--ink); font-weight: 500; }
-.cp-confirm {
-  padding: 13px; background: var(--gold); color: var(--ink); border: none;
-  font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 500;
-  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border-radius: 10px;
-}
+.cs-chip.active{background:var(--gold);border-color:var(--goldl);color:var(--ink);font-weight:500;}
 
-/* ── Hint bar ── */
-#hint-bar {
-  position: fixed;
-  top: calc(var(--safe-t) + 56px);
-  left: 10px; right: 10px;
-  z-index: 50; text-align: center;
-  pointer-events: none; display: none;
+/* Dispersion chart */
+#dispersion-canvas{
+  width:100%;border-radius:12px;
+  background:var(--gd);border:1px solid var(--gm);
+  display:block;
 }
-#hint-text {
-  display: inline-block;
-  padding: 7px 16px; border-radius: 20px;
-  font-size: 0.62rem; color: var(--sand); line-height: 1.4;
+.chart-controls{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+.ctrl-row{display:flex;align-items:center;gap:10px;}
+.ctrl-label{font-size:0.62rem;color:var(--sand);min-width:80px;}
+.ctrl-input{
+  flex:1;padding:10px 12px;background:var(--gm);border:1px solid var(--gb);
+  color:var(--cream);font-family:'DM Mono',monospace;font-size:0.82rem;
+  border-radius:8px;outline:none;
 }
+.chart-btn{
+  padding:13px;background:var(--gold);color:var(--ink);border:none;
+  font-family:'DM Mono',monospace;font-size:0.78rem;font-weight:500;
+  letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:10px;
+  margin-top:4px;
+}
+.chart-note{font-size:0.62rem;color:var(--sand);text-align:center;margin-top:8px;}
 
-/* ── Stats screen ── */
-#stats-screen {
-  position: fixed; inset: 0; z-index: 200;
-  background: var(--ink); overflow-y: auto;
-  display: none; flex-direction: column;
-  padding: max(20px, var(--safe-t)) 16px calc(20px + var(--safe-b));
+/* Club avg stats */
+.club-avg-card{
+  background:var(--gd);border:1px solid var(--gm);
+  border-radius:10px;padding:14px;margin-bottom:10px;
 }
-#stats-screen.open { display: flex; }
-.stats-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px; padding-bottom: 12px;
-  border-bottom: 1px solid var(--gm);
-}
-.stats-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--gold); }
-.close-btn {
-  padding: 8px 16px; border-radius: 8px;
-  background: var(--gm); border: 1px solid var(--gb);
-  color: var(--cream); font-family: 'DM Mono', monospace;
-  font-size: 0.6rem; cursor: pointer;
-}
-.club-stat-card {
-  background: var(--gd); border: 1px solid var(--gm);
-  border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
-}
-.csc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.csc-club { font-size: 0.85rem; color: var(--gold); font-weight: 500; }
-.csc-shots { font-size: 0.55rem; color: var(--sand); }
-.csc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.csc-cell { background: var(--gm); border-radius: 6px; padding: 7px; text-align: center; }
-.csc-label { font-size: 0.44rem; color: var(--sand); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
-.csc-val { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--cream); font-weight: 700; line-height: 1; }
-.csc-unit { font-size: 0.42rem; color: var(--sand); }
-.no-data { text-align: center; color: var(--sand); font-size: 0.68rem; padding: 40px 0; }
+.cac-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.cac-club{font-size:0.9rem;color:var(--gold);font-weight:500;}
+.cac-shots{font-size:0.6rem;color:var(--sand);}
+.cac-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.cac-cell{background:var(--gm);border-radius:8px;padding:9px;text-align:center;}
+.cac-lbl{font-size:0.48rem;color:var(--sand);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
+.cac-val{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--cream);font-weight:700;line-height:1;}
+.cac-unit{font-size:0.44rem;color:var(--sand);}
 
-/* ── Map markers ── */
-.ball-marker {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: #fff; border: 3px solid var(--ink);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.7);
-}
-.target-marker {
-  width: 36px; height: 36px;
-  position: relative; cursor: grab;
-}
-.target-marker svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
-.result-marker {
-  width: 20px; height: 20px; border-radius: 50%;
-  background: var(--red); border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-}
-.yd-dot { border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 1px 5px rgba(0,0,0,0.6); }
-.yd-dot.y50  { width: 13px; height: 13px; background: #e8c96a; }
-.yd-dot.y100 { width: 15px; height: 15px; background: #cc3333; }
-.yd-dot.y150 { width: 15px; height: 15px; background: #ffffff; }
-.yd-lbl {
-  background: rgba(5,12,8,0.85); border: 1px solid rgba(74,140,92,0.35);
-  font-family: 'DM Mono', monospace; font-size: 0.55rem;
-  padding: 2px 6px; border-radius: 8px; pointer-events: none;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.5); white-space: nowrap;
-}
-.yd-lbl.w { color: #fff; }
-.yd-lbl.y { color: #e8c96a; }
-.yd-lbl.r { color: #ff6b6b; }
-.pin-el { font-size: 1.8rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8)); line-height: 1; }
-.blue-dot {
-  width: 16px; height: 16px; border-radius: 50%;
-  background: var(--blue); border: 3px solid #fff;
-  box-shadow: 0 0 0 3px rgba(66,133,244,0.35);
-}
-.dist-preview {
-  background: rgba(5,12,8,0.88); border: 1px solid var(--gold);
-  color: var(--goldl); font-family: 'DM Mono', monospace;
-  font-size: 0.6rem; padding: 4px 10px; border-radius: 10px;
-  white-space: nowrap; pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-}
+/* Map markers */
+.ball-mk{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:0 2px 8px rgba(0,0,0,0.7);}
+.result-mk{width:20px;height:20px;border-radius:50%;background:var(--red);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.6);}
+.target-mk{width:44px;height:44px;cursor:grab;}
+.target-mk svg{width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.8));}
+.blue-dot{width:16px;height:16px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 3px rgba(66,133,244,0.35);}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
 
-<!-- Token screen -->
+<!-- TOKEN -->
 <div id="token-screen">
   <div class="ts-title">⛳<br>Golf Tracker</div>
-  <div class="ts-sub">Enter your Mapbox token to launch.<br>Free at <b style="color:var(--gold)">mapbox.com</b></div>
+  <div class="ts-sub">Enter your Mapbox token to get started.<br>Free at <b style="color:var(--gold)">mapbox.com</b></div>
   <input id="token-input" type="text" placeholder="pk.eyJ1..." autocomplete="off" spellcheck="false"/>
-  <button id="launch-btn" onclick="launch()">Launch</button>
+  <button id="launch-btn" onclick="doLaunch()">Launch</button>
   <div id="t-status"></div>
-  <div class="ts-help">
-    1. mapbox.com → sign up (free)<br>
-    2. Dashboard → copy Default public token (pk…)<br>
-    3. Paste above — saved forever on this device
-  </div>
+  <div class="ts-help">1. mapbox.com → sign up free<br>2. Dashboard → copy Default public token (pk…)<br>3. Paste above — saved forever on device</div>
 </div>
 
-<!-- Top bar -->
-<div id="top-bar" style="display:none">
+<!-- HOME -->
+<div id="home-screen">
+  <div class="home-logo">⛳</div>
+  <div class="home-title">Golf Tracker</div>
+  <div class="home-sub">Rock Creek CC</div>
+  <button class="home-btn primary" onclick="startRound()">
+    <span class="btn-ico">🏌️</span> Start Round
+  </button>
+  <button class="home-btn secondary" onclick="openStats()">
+    <span class="btn-ico">📊</span> View Stats
+  </button>
+  <div class="home-rounds-info" id="home-info"></div>
+</div>
+
+<!-- MAP UI -->
+<div id="top-bar">
   <div id="top-inner">
-    <div class="app-title">⛳ Golf Tracker</div>
-    <div class="top-controls">
+    <div class="round-badge" id="round-badge">⛳ Round in progress</div>
+    <div class="top-btns">
       <button class="icon-btn" onclick="toggleSat()">🛰</button>
       <button class="icon-btn" onclick="resetNorth()">⬆</button>
-      <button class="icon-btn" onclick="openStats()">📊</button>
+      <button class="icon-btn" onclick="confirmEndRound()">🏁</button>
     </div>
   </div>
 </div>
 
-<!-- Hint bar -->
-<div id="hint-bar"><div id="hint-text" class="glass"></div></div>
+<div id="hint-bar"><div id="hint-text"></div></div>
 
-<!-- Bottom-left distance readout -->
-<div id="dist-box">
-  <div class="db-row glass">
-    <div class="db-dot" style="background:#3aad6a"></div>
-    <div>
-      <div class="db-label">Front</div>
-      <div><span class="db-val" id="db-front">—</span> <span class="db-unit">yds</span></div>
-    </div>
-  </div>
-  <div class="db-row glass">
-    <div class="db-dot" style="background:#c9a84c"></div>
-    <div>
-      <div class="db-label">Middle</div>
-      <div><span class="db-val" id="db-mid">—</span> <span class="db-unit">yds</span></div>
-    </div>
-  </div>
-  <div class="db-row glass">
-    <div class="db-dot" style="background:#1a6e3a"></div>
-    <div>
-      <div class="db-label">Back</div>
-      <div><span class="db-val" id="db-back">—</span> <span class="db-unit">yds</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- Primary action button -->
 <button id="action-btn" onclick="handleAction()"></button>
 
-<!-- Mode toggle -->
-<div id="mode-toggle-wrap" style="display:none">
-  <div class="toggle-label" id="mode-label">Manual</div>
-  <div class="toggle-switch" id="mode-toggle" onclick="toggleMode()">
-    <div class="toggle-knob"></div>
-    <span class="toggle-mode-txt left">MAN</span>
-    <span class="toggle-mode-txt right">GPS</span>
+<div id="mode-wrap">
+  <div class="mode-lbl" id="mode-lbl">Manual</div>
+  <div class="toggle" id="mode-toggle" onclick="toggleMode()">
+    <div class="knob"></div>
+    <span class="toggle-txt l">MAN</span>
+    <span class="toggle-txt r">GPS</span>
   </div>
 </div>
 
-<!-- Club picker -->
-<div id="club-picker" class="glass">
+<!-- TARGET DISTANCE DISPLAY -->
+<div id="target-dist">
+  <div class="td-row">
+    <div class="td-label">From Ball</div>
+    <div class="td-val" id="td-ball">—</div>
+    <div class="td-unit">yards</div>
+  </div>
+  <div class="td-row" id="td-pin-row" style="display:none">
+    <div class="td-label">To Pin</div>
+    <div class="td-val" id="td-pin">—</div>
+    <div class="td-unit">yards</div>
+  </div>
+</div>
+
+<!-- CLUB PICKER -->
+<div id="club-picker">
   <div class="cp-title">Select Club</div>
-  <div class="cp-scroll" id="club-scroll"></div>
+  <div class="cp-grid" id="club-grid"></div>
   <button class="cp-confirm" onclick="confirmClub()">Confirm Club</button>
 </div>
 
-<!-- Shot summary -->
-<div id="shot-summary" class="glass">
-  <div class="ss-title">Shot Logged ✓</div>
-  <div class="ss-grid" id="ss-grid"></div>
-  <div class="ss-miss" id="ss-miss"></div>
-  <div class="ss-btns">
-    <button class="ss-btn discard" onclick="discardShot()">Undo</button>
-    <button class="ss-btn next" onclick="nextShot()">Next Shot →</button>
+<!-- SHOT SUMMARY -->
+<div id="shot-summary">
+  <div class="ss-card">
+    <div class="ss-title">Shot Logged ✓</div>
+    <div class="ss-grid" id="ss-grid"></div>
+    <div class="ss-miss" id="ss-miss"></div>
+    <div class="inplay-row">
+      <div>
+        <div class="inplay-label">In Play?</div>
+        <div class="inplay-sub">Legit shot at the green</div>
+      </div>
+      <div class="inplay-toggle" id="inplay-toggle" onclick="toggleInPlay()">
+        <div class="inplay-knob"></div>
+        <span class="inplay-tag l">NO</span>
+        <span class="inplay-tag r">YES</span>
+      </div>
+    </div>
+    <div class="ss-btns">
+      <button class="ss-btn undo" onclick="undoShot()">Undo</button>
+      <button class="ss-btn next" onclick="nextShot()">Next Shot →</button>
+    </div>
   </div>
 </div>
 
-<!-- Stats screen -->
-<div id="stats-screen">
-  <div class="stats-header">
-    <div class="stats-title">📊 Club Stats</div>
-    <button class="close-btn" onclick="closeStats()">Close</button>
+<!-- END ROUND -->
+<div id="end-round-modal">
+  <div class="erm-card">
+    <div class="erm-title">End Round?</div>
+    <div class="erm-shots" id="erm-count">0</div>
+    <div class="erm-sub">shots logged today.<br>This round will be saved and added to your stats.</div>
+    <div class="erm-btns">
+      <button class="erm-btn cancel" onclick="closeEndRound()">Cancel</button>
+      <button class="erm-btn end" onclick="endRound()">End Round</button>
+    </div>
   </div>
-  <div id="stats-content"></div>
+</div>
+
+<!-- STATS -->
+<div id="stats-screen" class="screen">
+  <div class="stats-nav">
+    <button class="stats-back" onclick="closeStats()">← Back</button>
+    <div class="stats-title">Stats</div>
+  </div>
+  <div class="stats-tabs">
+    <div class="stats-tab active" id="tab-disp" onclick="switchTab('disp')">Dispersion</div>
+    <div class="stats-tab" id="tab-avgs" onclick="switchTab('avgs')">Averages</div>
+  </div>
+  <div class="stats-body" id="stats-body"></div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // CONSTANTS
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 var ROCK_CREEK = { lng: -122.880994, lat: 45.555881 };
+var CLUBS = ['Driver','3W','5W','4H','5H','4i','5i','6i','7i','8i','9i','PW','GW','SW','LW'];
+var STEP = { BALL:'ball', TARGET:'target', CLUB:'club', RESULT:'result' };
 
-var CLUBS = [
-  'Driver','3W','5W','4H','5H',
-  '4i','5i','6i','7i','8i','9i',
-  'PW','GW','SW','LW'
-];
-
-// Shot flow steps
-var STEP = {
-  BALL:   'ball',    // waiting to set ball position
-  TARGET: 'target',  // ball set, waiting to set target
-  CLUB:   'club',    // target set, picking club
-  RESULT: 'result',  // club set, waiting for result
-};
-
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════════════════════
-var map;
-var isOnCourse = false;  // false = manual, true = on-course
-var isSat = true;
-var step = STEP.BALL;
-
-// Current shot data
-var ballPos = null;      // [lng, lat]
-var targetPos = null;    // [lng, lat]
-var resultPos = null;    // [lng, lat]
-var selectedClub = null;
-var currentGPS = null;   // live GPS position
-
-// Green positions (persistent per hole setup)
-var frontPos = null, midPos = null, backPos = null;
-var pinPos = null;
+// ══════════════════════════════════════════════════════
+var map, isSat=true, isOnCourse=false;
+var step=STEP.BALL;
+var ballPos=null, targetPos=null, resultPos=null;
+var selectedClub=null, isInPlay=false;
+var currentGPS=null;
+var pinPos=null; // estimated hole location
+var currentRoundId=null;
+var pendingShot=null;
 
 // Markers
-var ballMarker = null;
-var targetMarker = null, targetPreviewMarker = null;
-var resultMarker = null;
-var pinMarker = null;
-var blueDotMarker = null;
-var ydMarkers = [];
-var isDraggingTarget = false;
-var lastPendingShot = null;
+var ballMarker=null, targetMarker=null, resultMarker=null;
+var blueDotMarker=null;
+var isDragging=false;
+var statsTab='disp', statsClub='Driver';
+var statsRounds=[];
 
-// ══════════════════════════════════════════════════════════════
-// DATABASE (localStorage)
-// ══════════════════════════════════════════════════════════════
-function db_load() {
-  try { return JSON.parse(localStorage.getItem('gtdb') || '[]'); } catch(e) { return []; }
-}
-function db_save(shots) {
-  try { localStorage.setItem('gtdb', JSON.stringify(shots)); } catch(e) {}
-}
-function db_addShot(shot) {
-  var shots = db_load();
-  shots.push(shot);
-  db_save(shots);
+// ══════════════════════════════════════════════════════
+// DATABASE
+// ══════════════════════════════════════════════════════
+function dbLoad(){ try{ return JSON.parse(localStorage.getItem('gtdb')||'[]'); }catch(e){ return []; } }
+function dbSave(d){ try{ localStorage.setItem('gtdb',JSON.stringify(d)); }catch(e){} }
+function dbAdd(shot){ var d=dbLoad(); d.push(shot); dbSave(d); }
+function dbRounds(){
+  var d=dbLoad();
+  var rounds={};
+  d.forEach(function(s){ if(!rounds[s.roundId]) rounds[s.roundId]=[]; rounds[s.roundId].push(s); });
+  return rounds;
 }
 
-// ══════════════════════════════════════════════════════════════
-// LAUNCH
-// ══════════════════════════════════════════════════════════════
-function launch() {
-  var token = document.getElementById('token-input').value.trim();
-  if (!token) { alert('Paste your Mapbox token first'); return; }
-  if (!token.startsWith('pk.')) {
-    document.getElementById('t-status').textContent = '⚠️ Token should start with pk.';
-    return;
-  }
-  localStorage.setItem('gst_token', token);
-  document.getElementById('t-status').textContent = '⏳ Loading...';
-  mapboxgl.accessToken = token;
-
-  map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: [ROCK_CREEK.lng, ROCK_CREEK.lat],
-    zoom: 18, pitch: 0, bearing: 0,
-    attributionControl: false
+// ══════════════════════════════════════════════════════
+// LAUNCH / BOOT
+// ══════════════════════════════════════════════════════
+function doLaunch(){
+  var token=document.getElementById('token-input').value.trim();
+  if(!token){ alert('Paste your Mapbox token first'); return; }
+  if(!token.startsWith('pk.')){ document.getElementById('t-status').textContent='⚠️ Token should start with pk.'; return; }
+  localStorage.setItem('gst_token',token);
+  document.getElementById('t-status').textContent='⏳ Loading map...';
+  mapboxgl.accessToken=token;
+  map=new mapboxgl.Map({
+    container:'map',
+    style:'mapbox://styles/mapbox/satellite-streets-v12',
+    center:[ROCK_CREEK.lng,ROCK_CREEK.lat],
+    zoom:18,pitch:0,bearing:0,attributionControl:false
   });
-
-  map.on('error', function(e) {
-    document.getElementById('t-status').textContent = '❌ Map error — check token';
+  map.on('error',function(e){
+    document.getElementById('t-status').textContent='❌ Map error — check token';
     console.error(e);
   });
-
-  map.on('load', function() {
-    document.getElementById('token-screen').style.display = 'none';
-    document.getElementById('top-bar').style.display = 'block';
-    document.getElementById('mode-toggle-wrap').style.display = 'flex';
-    document.getElementById('hint-bar').style.display = 'block';
-    document.getElementById('dist-box').style.display = 'flex';
-    document.getElementById('action-btn').style.display = 'block';
-
-    buildClubPicker();
+  map.on('load',function(){
+    document.getElementById('token-screen').style.display='none';
+    map.on('click',onMapClick);
+    map.on('touchstart',onTouchStart);
+    map.on('touchmove',onTouchMove);
+    map.on('touchend',onTouchEnd);
+    buildClubGrid();
     startGPS();
-    goToStep(STEP.BALL);
+    showHome();
   });
-
-  map.on('click', handleMapClick);
-
-  // Touch drag for target marker
-  map.on('touchstart', onTouchStart);
-  map.on('touchmove',  onTouchMove);
-  map.on('touchend',   onTouchEnd);
 }
 
-// ══════════════════════════════════════════════════════════════
-// GPS
-// ══════════════════════════════════════════════════════════════
-function startGPS() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.watchPosition(
-    function(p) {
-      currentGPS = [p.coords.longitude, p.coords.latitude];
-      placeBlueDot(currentGPS[0], currentGPS[1]);
-    },
-    null,
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-  );
-}
-
-function placeBlueDot(lng, lat) {
-  if (!map) return;
-  if (!blueDotMarker) {
-    var el = document.createElement('div');
-    el.className = 'blue-dot';
-    blueDotMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-      .setLngLat([lng, lat]).addTo(map);
+// ══════════════════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════════════════
+function showHome(){
+  document.getElementById('home-screen').classList.add('open');
+  document.getElementById('top-bar').style.display='none';
+  document.getElementById('hint-bar').style.display='none';
+  document.getElementById('action-btn').style.display='none';
+  document.getElementById('mode-wrap').style.display='none';
+  // Show round count info
+  var rounds=dbRounds();
+  var keys=Object.keys(rounds);
+  var total=dbLoad().length;
+  var el=document.getElementById('home-info');
+  if(keys.length>0){
+    el.textContent=keys.length+' round'+(keys.length>1?'s':'')+' · '+total+' shots logged';
   } else {
-    blueDotMarker.setLngLat([lng, lat]);
+    el.textContent='No rounds logged yet';
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-// MODE TOGGLE
-// ══════════════════════════════════════════════════════════════
-function toggleMode() {
-  isOnCourse = !isOnCourse;
-  var toggle = document.getElementById('mode-toggle');
-  var label  = document.getElementById('mode-label');
-  if (isOnCourse) {
-    toggle.classList.add('on-course');
-    label.textContent = 'On Course';
-  } else {
-    toggle.classList.remove('on-course');
-    label.textContent = 'Manual';
-  }
+function startRound(){
+  var today=dateStr();
+  currentRoundId=today;
+  document.getElementById('home-screen').classList.remove('open');
+  document.getElementById('top-bar').style.display='block';
+  document.getElementById('hint-bar').style.display='block';
+  document.getElementById('mode-wrap').style.display='flex';
+  document.getElementById('round-badge').textContent='⛳ '+today;
+  pinPos=null;
   goToStep(STEP.BALL);
 }
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// GPS
+// ══════════════════════════════════════════════════════
+function startGPS(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(
+    function(p){
+      currentGPS=[p.coords.longitude,p.coords.latitude];
+      placeBlueDot(currentGPS[0],currentGPS[1]);
+    },
+    null,
+    {enableHighAccuracy:true,maximumAge:0,timeout:15000}
+  );
+}
+function placeBlueDot(lng,lat){
+  if(!map) return;
+  if(!blueDotMarker){
+    var el=document.createElement('div'); el.className='blue-dot';
+    blueDotMarker=new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat([lng,lat]).addTo(map);
+  } else { blueDotMarker.setLngLat([lng,lat]); }
+}
+
+// ══════════════════════════════════════════════════════
+// MODE
+// ══════════════════════════════════════════════════════
+function toggleMode(){
+  isOnCourse=!isOnCourse;
+  var t=document.getElementById('mode-toggle');
+  var l=document.getElementById('mode-lbl');
+  if(isOnCourse){ t.classList.add('on'); l.textContent='On Course'; }
+  else { t.classList.remove('on'); l.textContent='Manual'; }
+  goToStep(STEP.BALL);
+}
+
+// ══════════════════════════════════════════════════════
 // STEP MACHINE
-// ══════════════════════════════════════════════════════════════
-function goToStep(s) {
-  step = s;
-  var btn = document.getElementById('action-btn');
-  btn.className = '';
+// ══════════════════════════════════════════════════════
+function goToStep(s){
+  step=s;
+  var btn=document.getElementById('action-btn');
+  btn.className='';
+  hideTargetDist();
 
-  if (s === STEP.BALL) {
+  if(s===STEP.BALL){
     clearCurrentShot();
-    if (isOnCourse) {
-      setHint('Walk to your ball, then press <b>Set Ball Position</b>');
-      btn.textContent = '📍 Set Ball Position';
-      btn.className = 'gps';
+    if(isOnCourse){
+      setHint('Walk to your ball → press <b>Set Ball Position</b>');
+      btn.textContent='📍 Set Ball Position';
+      btn.className='gps';
     } else {
-      setHint('Tap the map to place your ball, then confirm');
-      btn.textContent = '✓ Confirm Ball Position';
-      btn.className = 'confirm';
-      // In manual mode, allow user to tap to place ball
-      map.getCanvas().style.cursor = 'crosshair';
+      setHint('Tap the map to place your ball');
+      btn.textContent='✓ Confirm Ball';
+      btn.className='place';
     }
-    btn.style.display = 'block';
+    btn.style.display='block';
+    map.getCanvas().style.cursor='crosshair';
 
-  } else if (s === STEP.TARGET) {
-    if (isOnCourse) {
-      setHint('Tap map to place target — drag to adjust');
-    } else {
-      setHint('Tap map to place target — drag to adjust');
-    }
-    btn.textContent = '⛳ Set Target';
-    btn.className = 'confirm';
-    btn.style.display = targetPos ? 'block' : 'none';
-    map.getCanvas().style.cursor = 'crosshair';
+  } else if(s===STEP.TARGET){
+    setHint('Tap map to place target — drag to adjust');
+    btn.textContent='⛳ Set Target';
+    btn.className='confirm';
+    btn.style.display= targetPos ? 'block' : 'none';
+    map.getCanvas().style.cursor='crosshair';
 
-  } else if (s === STEP.CLUB) {
+  } else if(s===STEP.CLUB){
     setHint('Select your club');
-    btn.textContent = '🏌️ Select Club';
-    btn.className = 'club';
-    btn.style.display = 'block';
+    btn.textContent='🏌️ Select Club';
+    btn.className='club';
+    btn.style.display='block';
     openClubPicker();
 
-  } else if (s === STEP.RESULT) {
-    if (isOnCourse) {
-      setHint('Walk to where your ball landed, then press <b>Set Result</b>');
-      btn.textContent = '📍 Set Result';
-      btn.className = 'result';
+  } else if(s===STEP.RESULT){
+    if(isOnCourse){
+      setHint('Walk to your ball → press <b>Set Result</b>');
+      btn.textContent='📍 Set Result';
+      btn.className='result';
     } else {
       setHint('Tap the map where your ball landed');
-      btn.textContent = '✓ Confirm Result';
-      btn.className = 'result';
-      map.getCanvas().style.cursor = 'crosshair';
+      btn.textContent='✓ Confirm Result';
+      btn.className='result';
+      map.getCanvas().style.cursor='crosshair';
     }
-    btn.style.display = 'block';
+    btn.style.display='block';
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-// ACTION BUTTON
-// ══════════════════════════════════════════════════════════════
-function handleAction() {
-  if (step === STEP.BALL) {
-    if (isOnCourse) {
-      // Log current GPS as ball position
-      if (!currentGPS) { alert('Waiting for GPS signal…'); return; }
-      ballPos = currentGPS.slice();
+// ══════════════════════════════════════════════════════
+// ACTION
+// ══════════════════════════════════════════════════════
+function handleAction(){
+  if(step===STEP.BALL){
+    if(isOnCourse){
+      if(!currentGPS){ alert('Waiting for GPS…'); return; }
+      ballPos=currentGPS.slice();
       placeBallMarker(ballPos);
       goToStep(STEP.TARGET);
     } else {
-      // Confirm manually placed ball
-      if (!ballPos) { alert('Tap the map to place your ball first'); return; }
+      if(!ballPos){ alert('Tap the map to place your ball first'); return; }
       goToStep(STEP.TARGET);
     }
-
-  } else if (step === STEP.TARGET) {
-    if (!targetPos) { alert('Tap the map to place a target first'); return; }
+  } else if(step===STEP.TARGET){
+    if(!targetPos){ alert('Tap the map to place a target first'); return; }
     goToStep(STEP.CLUB);
-
-  } else if (step === STEP.CLUB) {
+  } else if(step===STEP.CLUB){
     openClubPicker();
-
-  } else if (step === STEP.RESULT) {
-    if (isOnCourse) {
-      if (!currentGPS) { alert('Waiting for GPS signal…'); return; }
-      resultPos = currentGPS.slice();
+  } else if(step===STEP.RESULT){
+    if(isOnCourse){
+      if(!currentGPS){ alert('Waiting for GPS…'); return; }
+      resultPos=currentGPS.slice();
       placeResultMarker(resultPos);
       logShot();
     } else {
-      if (!resultPos) { alert('Tap the map where your ball landed'); return; }
+      if(!resultPos){ alert('Tap the map where your ball landed'); return; }
       logShot();
     }
   }
 }
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // MAP CLICK
-// ══════════════════════════════════════════════════════════════
-function handleMapClick(e) {
-  if (isDraggingTarget) return;
-  var lng = e.lngLat.lng, lat = e.lngLat.lat;
-
-  if (step === STEP.BALL && !isOnCourse) {
-    // Manual: tap to place ball
-    ballPos = [lng, lat];
-    placeBallMarker(ballPos);
-
-  } else if (step === STEP.TARGET) {
-    targetPos = [lng, lat];
+// ══════════════════════════════════════════════════════
+function onMapClick(e){
+  if(isDragging) return;
+  var lng=e.lngLat.lng, lat=e.lngLat.lat;
+  if(step===STEP.BALL && !isOnCourse){
+    ballPos=[lng,lat]; placeBallMarker(ballPos);
+  } else if(step===STEP.TARGET){
+    targetPos=[lng,lat];
     placeTargetMarker(targetPos);
-    updateDistPreview(lng, lat);
-    document.getElementById('action-btn').style.display = 'block';
-
-  } else if (step === STEP.RESULT && !isOnCourse) {
-    resultPos = [lng, lat];
-    placeResultMarker(resultPos);
+    updateTargetDist(lng,lat);
+    document.getElementById('action-btn').style.display='block';
+  } else if(step===STEP.RESULT && !isOnCourse){
+    resultPos=[lng,lat]; placeResultMarker(resultPos);
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-// TARGET DRAG (touch)
-// ══════════════════════════════════════════════════════════════
-var touchStartEl = null;
-
-function onTouchStart(e) {
-  if (step !== STEP.TARGET) return;
-  if (!targetMarker) return;
-  // Check if touch is near target marker
-  var markerEl = targetMarker.getElement();
-  var mRect = markerEl.getBoundingClientRect();
-  var touch = e.originalEvent.touches[0];
-  var dx = touch.clientX - (mRect.left + mRect.width/2);
-  var dy = touch.clientY - (mRect.top + mRect.height/2);
-  if (Math.sqrt(dx*dx + dy*dy) < 40) {
-    isDraggingTarget = true;
-    map.dragPan.disable();
-  }
+// ══════════════════════════════════════════════════════
+// TARGET DRAG
+// ══════════════════════════════════════════════════════
+function onTouchStart(e){
+  if(step!==STEP.TARGET||!targetMarker) return;
+  var mel=targetMarker.getElement();
+  var r=mel.getBoundingClientRect();
+  var t=e.originalEvent.touches[0];
+  var dx=t.clientX-(r.left+r.width/2), dy=t.clientY-(r.top+r.height/2);
+  if(Math.sqrt(dx*dx+dy*dy)<50){ isDragging=true; map.dragPan.disable(); }
 }
-
-function onTouchMove(e) {
-  if (!isDraggingTarget) return;
+function onTouchMove(e){
+  if(!isDragging) return;
   e.originalEvent.preventDefault();
-  var touch = e.originalEvent.touches[0];
-  var rect = map.getCanvas().getBoundingClientRect();
-  var x = touch.clientX - rect.left;
-  var y = touch.clientY - rect.top;
-  var ll = map.unproject([x, y]);
-  targetPos = [ll.lng, ll.lat];
+  var t=e.originalEvent.touches[0];
+  var rc=map.getCanvas().getBoundingClientRect();
+  var ll=map.unproject([t.clientX-rc.left, t.clientY-rc.top]);
+  targetPos=[ll.lng,ll.lat];
   targetMarker.setLngLat(targetPos);
-  updateDistPreview(ll.lng, ll.lat);
+  updateTargetDist(ll.lng,ll.lat);
+}
+function onTouchEnd(e){
+  if(isDragging){ isDragging=false; map.dragPan.enable(); }
 }
 
-function onTouchEnd(e) {
-  if (isDraggingTarget) {
-    isDraggingTarget = false;
-    map.dragPan.enable();
+// ══════════════════════════════════════════════════════
+// TARGET DISTANCE OVERLAY
+// ══════════════════════════════════════════════════════
+function updateTargetDist(lng,lat){
+  var box=document.getElementById('target-dist');
+  box.style.display='flex';
+  if(ballPos){
+    var d=yds(haversine(ballPos[1],ballPos[0],lat,lng));
+    document.getElementById('td-ball').textContent=d;
   }
+  var pinRow=document.getElementById('td-pin-row');
+  if(pinPos){
+    pinRow.style.display='block';
+    var dp=yds(haversine(pinPos[1],pinPos[0],lat,lng));
+    document.getElementById('td-pin').textContent=dp;
+  } else { pinRow.style.display='none'; }
+}
+function hideTargetDist(){
+  document.getElementById('target-dist').style.display='none';
 }
 
-// ══════════════════════════════════════════════════════════════
-// DISTANCE PREVIEW (while dragging target)
-// ══════════════════════════════════════════════════════════════
-function updateDistPreview(lng, lat) {
-  var dBall = ballPos ? yds(haversine(ballPos[1],ballPos[0],lat,lng)) : null;
-  var dMid  = midPos  ? yds(haversine(midPos[1], midPos[0], lat,lng)) :
-              pinPos  ? yds(haversine(pinPos[1],  pinPos[0], lat,lng)) : null;
-
-  var parts = [];
-  if (dBall !== null) parts.push('🏌️ ' + dBall + ' yds');
-  if (dMid  !== null) parts.push('⛳ ' + dMid + ' to pin');
-  var txt = parts.join('   ');
-
-  if (!targetPreviewMarker) {
-    var el = document.createElement('div');
-    el.className = 'dist-preview';
-    el.textContent = txt;
-    targetPreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', offset: [0, -22] })
-      .setLngLat([lng, lat]).addTo(map);
-  } else {
-    targetPreviewMarker.setLngLat([lng, lat]);
-    targetPreviewMarker.getElement().textContent = txt;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // CLUB PICKER
-// ══════════════════════════════════════════════════════════════
-function buildClubPicker() {
-  var scroll = document.getElementById('club-scroll');
-  scroll.innerHTML = '';
-  CLUBS.forEach(function(c) {
-    var chip = document.createElement('button');
-    chip.className = 'club-chip';
-    chip.textContent = c;
-    chip.onclick = function() {
+// ══════════════════════════════════════════════════════
+function buildClubGrid(){
+  var g=document.getElementById('club-grid');
+  g.innerHTML='';
+  CLUBS.forEach(function(c){
+    var chip=document.createElement('button');
+    chip.className='club-chip'; chip.textContent=c;
+    chip.onclick=function(){
       document.querySelectorAll('.club-chip').forEach(function(x){ x.classList.remove('selected'); });
-      chip.classList.add('selected');
-      selectedClub = c;
+      chip.classList.add('selected'); selectedClub=c;
     };
-    scroll.appendChild(chip);
+    g.appendChild(chip);
   });
 }
-
-function openClubPicker() {
-  var cp = document.getElementById('club-picker');
-  cp.style.display = 'flex';
-  setTimeout(function(){ cp.classList.add('open'); }, 10);
+function openClubPicker(){
+  var cp=document.getElementById('club-picker');
+  cp.style.display='flex';
+  setTimeout(function(){ cp.classList.add('open'); },10);
 }
-
-function closeClubPicker() {
-  var cp = document.getElementById('club-picker');
+function closeClubPicker(){
+  var cp=document.getElementById('club-picker');
   cp.classList.remove('open');
-  setTimeout(function(){ cp.style.display = 'none'; }, 300);
+  setTimeout(function(){ cp.style.display='none'; },300);
+}
+function confirmClub(){
+  if(!selectedClub){ alert('Select a club'); return; }
+  closeClubPicker(); goToStep(STEP.RESULT);
 }
 
-function confirmClub() {
-  if (!selectedClub) { alert('Select a club first'); return; }
-  closeClubPicker();
-  goToStep(STEP.RESULT);
-}
-
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // LOG SHOT
-// ══════════════════════════════════════════════════════════════
-function logShot() {
-  if (!ballPos || !targetPos || !resultPos || !selectedClub) return;
-
-  var carryM    = haversine(ballPos[1],   ballPos[0],   resultPos[1], resultPos[0]);
-  var toTargetM = haversine(ballPos[1],   ballPos[0],   targetPos[1], targetPos[0]);
-
-  // Calculate right/left and long/short offset from target
-  var miss = calcMiss(ballPos, targetPos, resultPos);
-
-  var shot = {
-    id:        Date.now(),
-    date:      new Date().toISOString(),
-    roundId:   getRoundId(),
-    club:      selectedClub,
-    mode:      isOnCourse ? 'oncourse' : 'manual',
-    ball:      { lat: ballPos[1],   lng: ballPos[0] },
-    target:    { lat: targetPos[1], lng: targetPos[0] },
-    result:    { lat: resultPos[1], lng: resultPos[0] },
-    carryYds:  Math.round(carryM   * 1.09361),
-    targetYds: Math.round(toTargetM * 1.09361),
-    missLat:   miss.lateral,   // + = right, - = left
-    missLng:   miss.depth,     // + = long,  - = short
+// ══════════════════════════════════════════════════════
+function logShot(){
+  var carry=haversine(ballPos[1],ballPos[0],resultPos[1],resultPos[0]);
+  var toDist=haversine(ballPos[1],ballPos[0],targetPos[1],targetPos[0]);
+  var miss=calcMiss(ballPos,targetPos,resultPos);
+  pendingShot={
+    id:Date.now(), date:new Date().toISOString(),
+    roundId:currentRoundId, club:selectedClub,
+    mode:isOnCourse?'oncourse':'manual',
+    ball:{lat:ballPos[1],lng:ballPos[0]},
+    target:{lat:targetPos[1],lng:targetPos[0]},
+    result:{lat:resultPos[1],lng:resultPos[0]},
+    carryYds:Math.round(carry*1.09361),
+    targetYds:Math.round(toDist*1.09361),
+    missLat:miss.lateral, missDepth:miss.depth,
+    inPlay:false
   };
-
-  lastPendingShot = shot;
-  showShotSummary(shot);
+  isInPlay=false;
+  showShotSummary(pendingShot);
 }
 
-function getRoundId() {
-  var d = new Date();
-  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
-}
-
-function pad(n){ return n < 10 ? '0'+n : ''+n; }
-
-// ══════════════════════════════════════════════════════════════
-// MISS CALCULATION (lateral + depth relative to target line)
-// ══════════════════════════════════════════════════════════════
-function calcMiss(ball, target, result) {
-  // Project onto ball→target line, compute perpendicular offset
-  var bx = ball[0],   by = ball[1];
-  var tx = target[0], ty = target[1];
-  var rx = result[0], ry = result[1];
-
-  // Direction vector (ball → target)
-  var dx = tx - bx, dy = ty - by;
-  var len = Math.sqrt(dx*dx + dy*dy);
-  if (len === 0) return { lateral: 0, depth: 0 };
-  var ux = dx/len, uy = dy/len;
-
-  // Vector ball → result
-  var vrx = rx - bx, vry = ry - by;
-
-  // Depth = projection onto target direction (positive = long)
-  var depthDeg = vrx*ux + vry*uy;
-  // Lateral = cross product (positive = right)
-  var latDeg = vrx*uy - vry*ux;
-
-  // Convert degrees to yards (rough: 1 deg lat ≈ 111,000m, lng varies)
-  var metersPerDegLat = 111000;
-  var metersPerDegLng = 111000 * Math.cos(by * Math.PI / 180);
-  var depthM = depthDeg * ((Math.abs(uy) * metersPerDegLat + Math.abs(ux) * metersPerDegLng) / 1);
-  var latM   = latDeg   * ((Math.abs(ux) * metersPerDegLat + Math.abs(uy) * metersPerDegLng) / 1);
-
-  var targetDist = haversine(by, bx, ty, tx);
-  // Correct depth so 0 = exactly at target distance
-  var resultDist = haversine(by, bx, ry, rx);
-  var depthYds = Math.round((resultDist - targetDist) * 1.09361);
-  var latYds   = Math.round(latM * 1.09361);
-
-  return { lateral: latYds, depth: depthYds };
-}
-
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // SHOT SUMMARY
-// ══════════════════════════════════════════════════════════════
-function showShotSummary(shot) {
-  var grid = document.getElementById('ss-grid');
-  var miss = document.getElementById('ss-miss');
-
-  grid.innerHTML =
-    cell('Carry',    shot.carryYds,  'yds') +
-    cell('To Target', shot.targetYds, 'yds') +
-    cell('Club',      shot.club,      '') +
-    cell('Date',      shot.roundId,   '');
-
-  var latTxt  = shot.missLat === 0  ? 'On line' :
-                (Math.abs(shot.missLat) + ' yds ' + (shot.missLat > 0 ? 'RIGHT' : 'LEFT'));
-  var depthTxt = shot.missLng === 0 ? 'On distance' :
-                (Math.abs(shot.missLng) + ' yds ' + (shot.missLng > 0 ? 'LONG' : 'SHORT'));
-
-  miss.innerHTML = 'Miss: <span>' + latTxt + '</span> · <span>' + depthTxt + '</span>';
-
-  document.getElementById('shot-summary').style.display = 'flex';
-  document.getElementById('action-btn').style.display = 'none';
+// ══════════════════════════════════════════════════════
+function showShotSummary(shot){
+  var grid=document.getElementById('ss-grid');
+  var miss=document.getElementById('ss-miss');
+  grid.innerHTML=
+    ssCell('Carry',shot.carryYds,'yds')+
+    ssCell('To Target',shot.targetYds,'yds')+
+    ssCell('Club',shot.club,'')+
+    ssCell('Round',shot.roundId,'');
+  var latTxt=shot.missLat===0?'On line':(Math.abs(shot.missLat)+' yds '+(shot.missLat>0?'RIGHT':'LEFT'));
+  var depTxt=shot.missDepth===0?'On distance':(Math.abs(shot.missDepth)+' yds '+(shot.missDepth>0?'LONG':'SHORT'));
+  miss.innerHTML='Miss: <span>'+latTxt+'</span> &nbsp;·&nbsp; <span>'+depTxt+'</span>';
+  // Reset in-play toggle
+  var tog=document.getElementById('inplay-toggle');
+  tog.className='inplay-toggle';
+  document.getElementById('shot-summary').classList.add('open');
+  document.getElementById('action-btn').style.display='none';
+  hideTargetDist();
 }
 
-function cell(label, val, unit) {
-  return '<div class="ss-cell"><div class="ss-cell-label">'+label+'</div>' +
-    '<div class="ss-cell-val">'+val+'</div>' +
-    (unit ? '<div class="ss-cell-unit">'+unit+'</div>' : '') + '</div>';
+function ssCell(l,v,u){
+  return '<div class="ss-cell"><div class="ss-cell-lbl">'+l+'</div>'+
+    '<div class="ss-cell-val">'+v+'</div>'+
+    (u?'<div class="ss-cell-unit">'+u+'</div>':'')+
+    '</div>';
 }
 
-function nextShot() {
-  if (lastPendingShot) { db_addShot(lastPendingShot); lastPendingShot = null; }
-  document.getElementById('shot-summary').style.display = 'none';
+function toggleInPlay(){
+  isInPlay=!isInPlay;
+  var tog=document.getElementById('inplay-toggle');
+  tog.className='inplay-toggle '+(isInPlay?'yes':'no');
+  if(pendingShot) pendingShot.inPlay=isInPlay;
+}
+
+function nextShot(){
+  if(pendingShot){ dbAdd(pendingShot); pendingShot=null; }
+  document.getElementById('shot-summary').classList.remove('open');
   goToStep(STEP.BALL);
 }
 
-function discardShot() {
-  lastPendingShot = null;
-  document.getElementById('shot-summary').style.display = 'none';
+function undoShot(){
+  pendingShot=null;
+  document.getElementById('shot-summary').classList.remove('open');
   goToStep(STEP.BALL);
 }
 
-// ══════════════════════════════════════════════════════════════
-// PLACE MARKERS
-// ══════════════════════════════════════════════════════════════
-function placeBallMarker(pos) {
-  if (ballMarker) ballMarker.remove();
-  var el = document.createElement('div'); el.className = 'ball-marker';
-  ballMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(pos).addTo(map);
+// ══════════════════════════════════════════════════════
+// END ROUND
+// ══════════════════════════════════════════════════════
+function confirmEndRound(){
+  var shots=dbLoad().filter(function(s){ return s.roundId===currentRoundId; });
+  document.getElementById('erm-count').textContent=shots.length;
+  document.getElementById('end-round-modal').classList.add('open');
+}
+function closeEndRound(){ document.getElementById('end-round-modal').classList.remove('open'); }
+function endRound(){
+  document.getElementById('end-round-modal').classList.remove('open');
+  currentRoundId=null;
+  document.getElementById('top-bar').style.display='none';
+  document.getElementById('hint-bar').style.display='none';
+  document.getElementById('action-btn').style.display='none';
+  document.getElementById('mode-wrap').style.display='none';
+  clearCurrentShot();
+  showHome();
 }
 
-function placeTargetMarker(pos) {
-  if (targetMarker) targetMarker.remove();
-  var el = document.createElement('div');
-  el.className = 'target-marker';
-  el.innerHTML = '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-    '<circle cx="30" cy="30" r="20" stroke="#e8c96a" stroke-width="1.5" stroke-dasharray="5 3"/>' +
-    '<circle cx="30" cy="30" r="4" fill="#e8c96a"/>' +
-    '<line x1="30" y1="4"  x2="30" y2="18" stroke="#e8c96a" stroke-width="1.5"/>' +
-    '<line x1="30" y1="42" x2="30" y2="56" stroke="#e8c96a" stroke-width="1.5"/>' +
-    '<line x1="4"  y1="30" x2="18" y2="30" stroke="#e8c96a" stroke-width="1.5"/>' +
-    '<line x1="42" y1="30" x2="56" y2="30" stroke="#e8c96a" stroke-width="1.5"/>' +
-    '</svg>';
-  targetMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(pos).addTo(map);
+// ══════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════
+function openStats(){
+  document.getElementById('home-screen').classList.remove('open');
+  document.getElementById('stats-screen').classList.add('open');
+  statsTab='disp'; statsClub='Driver'; statsRounds=[];
+  renderStats();
+}
+function closeStats(){
+  document.getElementById('stats-screen').classList.remove('open');
+  showHome();
+}
+function switchTab(t){ statsTab=t; renderStats(); }
+
+function renderStats(){
+  // Update tab highlights
+  document.getElementById('tab-disp').className='stats-tab'+(statsTab==='disp'?' active':'');
+  document.getElementById('tab-avgs').className='stats-tab'+(statsTab==='avgs'?' active':'');
+  if(statsTab==='disp') renderDispersion();
+  else renderAverages();
 }
 
-function placeResultMarker(pos) {
-  if (resultMarker) resultMarker.remove();
-  var el = document.createElement('div'); el.className = 'result-marker';
-  resultMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(pos).addTo(map);
-}
+// ── Dispersion tab ─────────────────────────────────────
+function renderDispersion(){
+  var rounds=dbRounds();
+  var roundKeys=Object.keys(rounds).sort().reverse();
+  var body=document.getElementById('stats-body');
 
-function clearCurrentShot() {
-  if (ballMarker)   { ballMarker.remove();   ballMarker = null; }
-  if (targetMarker) { targetMarker.remove(); targetMarker = null; }
-  if (resultMarker) { resultMarker.remove(); resultMarker = null; }
-  if (targetPreviewMarker) { targetPreviewMarker.remove(); targetPreviewMarker = null; }
-  ballPos = null; targetPos = null; resultPos = null; selectedClub = null;
-  map.getCanvas().style.cursor = '';
-}
-
-// ══════════════════════════════════════════════════════════════
-// STATS SCREEN
-// ══════════════════════════════════════════════════════════════
-function openStats() {
-  var shots = db_load();
-  var content = document.getElementById('stats-content');
-
-  if (shots.length === 0) {
-    content.innerHTML = '<div class="no-data">No shots logged yet.<br>Get out there! ⛳</div>';
-    document.getElementById('stats-screen').classList.add('open');
+  if(roundKeys.length===0){
+    body.innerHTML='<div style="text-align:center;color:var(--sand);padding:40px 0;font-size:0.78rem;">No rounds logged yet.</div>';
     return;
   }
 
-  // Group by club
-  var byClub = {};
-  CLUBS.forEach(function(c){ byClub[c] = []; });
-  shots.forEach(function(s){ if (byClub[s.club]) byClub[s.club].push(s); });
+  // Get shots for selected rounds + club
+  var selShots=[];
+  if(statsRounds.length>0){
+    statsRounds.forEach(function(r){
+      (rounds[r]||[]).forEach(function(s){ if(s.club===statsClub) selShots.push(s); });
+    });
+  }
 
-  var html = '';
-  CLUBS.forEach(function(club) {
-    var cs = byClub[club];
-    if (cs.length === 0) return;
+  var html='<div style="font-size:0.6rem;color:var(--sand);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Select Rounds</div>';
+  html+='<div class="round-list">';
+  roundKeys.forEach(function(r){
+    var sel=statsRounds.indexOf(r)>=0;
+    html+='<div class="round-item'+(sel?' selected':'')+'" onclick="toggleRound(\''+r+'\')">' +
+      '<div><div class="round-date">'+r+'</div><div class="round-count">'+rounds[r].length+' shots</div></div>' +
+      '<div class="round-check">'+(sel?'✓':'')+'</div></div>';
+  });
+  html+='</div>';
 
-    var avgCarry  = avg(cs.map(function(s){ return s.carryYds; }));
-    var avgLat    = avg(cs.map(function(s){ return Math.abs(s.missLat); }));
-    var avgDepth  = avg(cs.map(function(s){ return Math.abs(s.missLng); }));
-    var latBias   = avg(cs.map(function(s){ return s.missLat; }));
-    var depthBias = avg(cs.map(function(s){ return s.missLng; }));
+  html+='<div style="font-size:0.6rem;color:var(--sand);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Club</div>';
+  html+='<div class="club-selector">';
+  CLUBS.forEach(function(c){
+    html+='<div class="cs-chip'+(c===statsClub?' active':'')+'" onclick="selectStatsClub(\''+c+'\')">'+c+'</div>';
+  });
+  html+='</div>';
 
-    html += '<div class="club-stat-card">' +
-      '<div class="csc-header">' +
-        '<div class="csc-club">' + club + '</div>' +
-        '<div class="csc-shots">' + cs.length + ' shot' + (cs.length>1?'s':'') + '</div>' +
-      '</div>' +
-      '<div class="csc-grid">' +
-        cscCell('Avg Carry',   Math.round(avgCarry),  'yds') +
-        cscCell('Avg Miss Lat', Math.round(avgLat),   'yds') +
-        cscCell('Avg Miss Dep', Math.round(avgDepth), 'yds') +
-        cscCell('Lat Bias',   (latBias>0?'R ':'L ')+Math.abs(Math.round(latBias)),   'yds') +
-        cscCell('Depth Bias', (depthBias>0?'Long ':'Short ')+Math.abs(Math.round(depthBias)), 'yds') +
-        cscCell('Shots',      cs.length, '') +
-      '</div>' +
-    '</div>';
+  if(selShots.length===0){
+    html+='<div style="text-align:center;color:var(--sand);padding:24px 0;font-size:0.75rem;">Select rounds above to view chart.</div>';
+    document.getElementById('stats-body').innerHTML=html;
+    return;
+  }
+
+  // Range controls
+  var carries=selShots.map(function(s){return s.carryYds;});
+  var maxC=Math.max.apply(null,carries), minC=Math.min.apply(null,carries);
+  var lats=selShots.map(function(s){return Math.abs(s.missLat);});
+  var maxL=Math.max.apply(null,lats)||20;
+
+  html+='<canvas id="dispersion-canvas" height="340"></canvas>';
+  html+='<div class="chart-controls">' +
+    '<div class="ctrl-row"><span class="ctrl-label">Max yards</span><input class="ctrl-input" id="chart-max" type="number" value="'+Math.ceil(maxC/10)*10+'"/></div>' +
+    '<div class="ctrl-row"><span class="ctrl-label">Min yards</span><input class="ctrl-input" id="chart-min" type="number" value="'+Math.floor(minC/10)*10+'"/></div>' +
+    '<div class="ctrl-row"><span class="ctrl-label">Width (yds)</span><input class="ctrl-input" id="chart-width" type="number" value="'+(Math.ceil(maxL/5)*5*2+10)+'"/></div>' +
+    '<button class="chart-btn" onclick="drawChart()">Update Chart</button>' +
+    '</div><div class="chart-note" id="chart-note"></div>';
+
+  document.getElementById('stats-body').innerHTML=html;
+  // Draw after DOM update
+  setTimeout(drawChart, 50);
+}
+
+function toggleRound(r){
+  var i=statsRounds.indexOf(r);
+  if(i>=0) statsRounds.splice(i,1); else statsRounds.push(r);
+  renderStats();
+}
+function selectStatsClub(c){ statsClub=c; renderStats(); }
+
+function drawChart(){
+  var canvas=document.getElementById('dispersion-canvas');
+  if(!canvas) return;
+  var maxY=parseInt(document.getElementById('chart-max').value)||300;
+  var minY=parseInt(document.getElementById('chart-min').value)||200;
+  var width=parseInt(document.getElementById('chart-width').value)||40;
+  var halfW=width/2;
+
+  var rounds=dbRounds();
+  var allShots=[];
+  statsRounds.forEach(function(r){
+    (rounds[r]||[]).forEach(function(s){ if(s.club===statsClub) allShots.push(s); });
   });
 
-  content.innerHTML = html;
-  document.getElementById('stats-screen').classList.add('open');
+  var inRange=allShots.filter(function(s){ return s.carryYds>=minY && s.carryYds<=maxY && Math.abs(s.missLat)<=halfW; });
+  var outRange=allShots.length-inRange.length;
+
+  var W=canvas.offsetWidth||canvas.width;
+  var H=340;
+  canvas.width=W; canvas.height=H;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle='#0c1e12'; ctx.fillRect(0,0,W,H);
+
+  // Margins
+  var ml=48, mr=20, mt=20, mb=40;
+  var cw=W-ml-mr, ch=H-mt-mb;
+
+  // Grid lines
+  ctx.strokeStyle='rgba(46,96,64,0.4)'; ctx.lineWidth=0.5;
+  var ySteps=5;
+  for(var i=0;i<=ySteps;i++){
+    var yy=mt+i*(ch/ySteps);
+    ctx.beginPath(); ctx.moveTo(ml,yy); ctx.lineTo(ml+cw,yy); ctx.stroke();
+    var yVal=Math.round(maxY-(i*(maxY-minY)/ySteps));
+    ctx.fillStyle='rgba(200,190,160,0.7)'; ctx.font='10px DM Mono,monospace';
+    ctx.textAlign='right'; ctx.fillText(yVal,ml-6,yy+4);
+  }
+  // Vertical grid
+  var xSteps=4;
+  for(var j=0;j<=xSteps;j++){
+    var xx=ml+j*(cw/xSteps);
+    ctx.beginPath(); ctx.moveTo(xx,mt); ctx.lineTo(xx,mt+ch); ctx.stroke();
+    var xVal=Math.round(-halfW+j*(width/xSteps));
+    ctx.fillStyle='rgba(200,190,160,0.7)'; ctx.font='10px DM Mono,monospace';
+    ctx.textAlign='center'; ctx.fillText((xVal>0?'+':'')+xVal,xx,mt+ch+16);
+  }
+
+  // Axes labels
+  ctx.fillStyle='rgba(200,190,160,0.5)'; ctx.font='10px DM Mono,monospace';
+  ctx.textAlign='center'; ctx.fillText('L ← Lateral (yds) → R',ml+cw/2,H-4);
+  ctx.save(); ctx.translate(12,mt+ch/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Carry (yds)',0,0); ctx.restore();
+
+  // Center line
+  var cx=ml+cw/2;
+  ctx.strokeStyle='rgba(201,168,76,0.4)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(cx,mt); ctx.lineTo(cx,mt+ch); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dots
+  inRange.forEach(function(s){
+    var px=ml+((s.missLat+halfW)/width)*cw;
+    var py=mt+((maxY-s.carryYds)/(maxY-minY))*ch;
+    ctx.beginPath(); ctx.arc(px,py,6,0,Math.PI*2);
+    ctx.fillStyle=s.inPlay?'#2d8a50':'#cc3333';
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // Stats overlay
+  if(inRange.length>0){
+    var avgCarry=inRange.reduce(function(a,b){return a+b.carryYds;},0)/inRange.length;
+    var avgLat=inRange.reduce(function(a,b){return a+b.missLat;},0)/inRange.length;
+    ctx.fillStyle='rgba(201,168,76,0.9)'; ctx.font='bold 11px DM Mono,monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Avg: '+Math.round(avgCarry)+' yds  ·  Bias: '+(avgLat>0?'R ':'L ')+Math.abs(Math.round(avgLat))+' yds', ml+4, mt+14);
+  }
+
+  // Out of range note
+  document.getElementById('chart-note').textContent=
+    outRange>0 ? outRange+' shot'+(outRange>1?'s':'')+' outside display range not shown.' : '';
 }
 
-function cscCell(label, val, unit) {
-  return '<div class="csc-cell"><div class="csc-label">'+label+'</div>' +
-    '<div class="csc-val">'+val+'</div>' +
-    (unit?'<div class="csc-unit">'+unit+'</div>':'') + '</div>';
+// ── Averages tab ───────────────────────────────────────
+function renderAverages(){
+  var shots=dbLoad();
+  var body=document.getElementById('stats-body');
+  if(shots.length===0){
+    body.innerHTML='<div style="text-align:center;color:var(--sand);padding:40px 0;font-size:0.78rem;">No shots logged yet.</div>';
+    return;
+  }
+  var byClub={};
+  CLUBS.forEach(function(c){ byClub[c]=[]; });
+  shots.forEach(function(s){ if(byClub[s.club]) byClub[s.club].push(s); });
+  var html='';
+  CLUBS.forEach(function(club){
+    var cs=byClub[club];
+    if(cs.length===0) return;
+    var avgCarry=avg(cs.map(function(s){return s.carryYds;}));
+    var avgLat=avg(cs.map(function(s){return Math.abs(s.missLat);}));
+    var avgDep=avg(cs.map(function(s){return Math.abs(s.missDepth);}));
+    var latBias=avg(cs.map(function(s){return s.missLat;}));
+    var depBias=avg(cs.map(function(s){return s.missDepth;}));
+    var inPlayCount=cs.filter(function(s){return s.inPlay;}).length;
+    html+='<div class="club-avg-card">'+
+      '<div class="cac-header"><div class="cac-club">'+club+'</div><div class="cac-shots">'+cs.length+' shots · '+inPlayCount+' in play</div></div>'+
+      '<div class="cac-grid">'+
+        cacCell('Avg Carry',Math.round(avgCarry),'yds')+
+        cacCell('Miss Lat',Math.round(avgLat),'yds')+
+        cacCell('Miss Dep',Math.round(avgDep),'yds')+
+        cacCell('Lat Bias',(latBias>0?'R ':'L ')+Math.abs(Math.round(latBias)),'yds')+
+        cacCell('Dep Bias',(depBias>0?'Long ':'Shrt ')+Math.abs(Math.round(depBias)),'yds')+
+        cacCell('In Play',Math.round(inPlayCount/cs.length*100),'%')+
+      '</div></div>';
+  });
+  body.innerHTML=html;
 }
 
-function closeStats() { document.getElementById('stats-screen').classList.remove('open'); }
-
-function avg(arr) {
-  if (!arr.length) return 0;
-  return arr.reduce(function(a,b){ return a+b; }, 0) / arr.length;
+function cacCell(l,v,u){
+  return '<div class="cac-cell"><div class="cac-lbl">'+l+'</div><div class="cac-val">'+v+'</div>'+(u?'<div class="cac-unit">'+u+'</div>':'')+  '</div>';
 }
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// MARKERS
+// ══════════════════════════════════════════════════════
+function placeBallMarker(pos){
+  if(ballMarker) ballMarker.remove();
+  var el=document.createElement('div'); el.className='ball-mk';
+  ballMarker=new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat(pos).addTo(map);
+}
+function placeTargetMarker(pos){
+  if(targetMarker) targetMarker.remove();
+  var el=document.createElement('div'); el.className='target-mk';
+  el.innerHTML='<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">'+
+    '<circle cx="30" cy="30" r="20" stroke="#e8c96a" stroke-width="2" stroke-dasharray="5 3"/>'+
+    '<circle cx="30" cy="30" r="5" fill="#e8c96a"/>'+
+    '<line x1="30" y1="2" x2="30" y2="17" stroke="#e8c96a" stroke-width="2"/>'+
+    '<line x1="30" y1="43" x2="30" y2="58" stroke="#e8c96a" stroke-width="2"/>'+
+    '<line x1="2" y1="30" x2="17" y2="30" stroke="#e8c96a" stroke-width="2"/>'+
+    '<line x1="43" y1="30" x2="58" y2="30" stroke="#e8c96a" stroke-width="2"/>'+
+    '</svg>';
+  targetMarker=new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat(pos).addTo(map);
+}
+function placeResultMarker(pos){
+  if(resultMarker) resultMarker.remove();
+  var el=document.createElement('div'); el.className='result-mk';
+  resultMarker=new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat(pos).addTo(map);
+}
+function clearCurrentShot(){
+  if(ballMarker){ ballMarker.remove(); ballMarker=null; }
+  if(targetMarker){ targetMarker.remove(); targetMarker=null; }
+  if(resultMarker){ resultMarker.remove(); resultMarker=null; }
+  ballPos=null; targetPos=null; resultPos=null; selectedClub=null;
+  map.getCanvas().style.cursor='';
+}
+
+// ══════════════════════════════════════════════════════
 // MAP CONTROLS
-// ══════════════════════════════════════════════════════════════
-function toggleSat() {
-  if (!map) return;
-  isSat = !isSat;
-  map.setStyle(isSat
-    ? 'mapbox://styles/mapbox/satellite-streets-v12'
-    : 'mapbox://styles/mapbox/outdoors-v12');
+// ══════════════════════════════════════════════════════
+function toggleSat(){
+  isSat=!isSat;
+  map.setStyle(isSat?'mapbox://styles/mapbox/satellite-streets-v12':'mapbox://styles/mapbox/outdoors-v12');
 }
-function resetNorth() { if (map) map.easeTo({ bearing: 0, pitch: 0, duration: 400 }); }
+function resetNorth(){ if(map) map.easeTo({bearing:0,pitch:0,duration:400}); }
 
-// ══════════════════════════════════════════════════════════════
-// HINT
-// ══════════════════════════════════════════════════════════════
-function setHint(html) {
-  document.getElementById('hint-text').innerHTML = html || '';
-  document.getElementById('hint-bar').style.display = html ? 'block' : 'none';
+// ══════════════════════════════════════════════════════
+// MISS CALC
+// ══════════════════════════════════════════════════════
+function calcMiss(ball,target,result){
+  var bx=ball[0],by=ball[1],tx=target[0],ty=target[1],rx=result[0],ry=result[1];
+  var dx=tx-bx,dy=ty-by,len=Math.sqrt(dx*dx+dy*dy);
+  if(len===0) return {lateral:0,depth:0};
+  var ux=dx/len,uy=dy/len;
+  var vrx=rx-bx,vry=ry-by;
+  var mplat=111000*Math.cos(by*Math.PI/180);
+  var mplng=111000;
+  var latM=(vrx*uy-vry*ux)*((Math.abs(ux)*mplng+Math.abs(uy)*mplat));
+  var targetDist=haversine(by,bx,ty,tx);
+  var resultDist=haversine(by,bx,ry,rx);
+  var depthYds=Math.round((resultDist-targetDist)*1.09361);
+  var latYds=Math.round(latM*1.09361);
+  return {lateral:latYds,depth:depthYds};
 }
 
-// ══════════════════════════════════════════════════════════════
-// MATH
-// ══════════════════════════════════════════════════════════════
-function haversine(lat1, lng1, lat2, lng2) {
-  var R = 6371000;
-  var p1 = lat1*Math.PI/180, p2 = lat2*Math.PI/180;
-  var dp = (lat2-lat1)*Math.PI/180, dl = (lng2-lng1)*Math.PI/180;
-  var a  = Math.sin(dp/2)*Math.sin(dp/2) + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+// ══════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════
+function haversine(lat1,lng1,lat2,lng2){
+  var R=6371000;
+  var p1=lat1*Math.PI/180,p2=lat2*Math.PI/180;
+  var dp=(lat2-lat1)*Math.PI/180,dl=(lng2-lng1)*Math.PI/180;
+  var a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
-function yds(m) { return Math.round(m * 1.09361); }
+function yds(m){ return Math.round(m*1.09361); }
+function avg(arr){ if(!arr.length) return 0; return arr.reduce(function(a,b){return a+b;},0)/arr.length; }
+function dateStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate();
+}
+function setHint(html){
+  document.getElementById('hint-text').innerHTML=html||'';
+  document.getElementById('hint-bar').style.display=html?'block':'none';
+}
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // BOOT
-// ══════════════════════════════════════════════════════════════
-window.addEventListener('load', function() {
-  var t = localStorage.getItem('gst_token');
-  if (t) { document.getElementById('token-input').value = t; launch(); }
+// ══════════════════════════════════════════════════════
+window.addEventListener('load',function(){
+  var t=localStorage.getItem('gst_token');
+  if(t){ document.getElementById('token-input').value=t; doLaunch(); }
 });
 </script>
 </body>
